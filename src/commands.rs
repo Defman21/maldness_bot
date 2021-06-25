@@ -2,8 +2,10 @@ use frankenstein::{Api, BotCommand, SetMyCommandsParams, TelegramApi, Update};
 use std::collections::HashMap;
 
 use crate::errors::HandleUpdateError;
+use crate::helpers::is_admin;
 
 pub mod donate;
+pub mod set_paying_status;
 pub mod up;
 
 type Handler = fn(&Api, &Update, &str) -> Option<HandleUpdateError>;
@@ -12,6 +14,7 @@ pub struct Command {
     pub name: &'static str,
     pub description: &'static str,
     pub handler: Handler,
+    pub is_admin_only: bool,
 }
 
 pub struct CommandExecutor<'a> {
@@ -51,7 +54,15 @@ impl<'a> CommandExecutor<'a> {
         let commands: Vec<BotCommand> = self
             .commands
             .values()
-            .map(|cmd| BotCommand::new(cmd.name.to_string(), cmd.description.to_string()))
+            .map(|cmd| {
+                let mut description = String::new();
+                if cmd.is_admin_only {
+                    description = description + "[Admin only] ";
+                }
+                description += cmd.description;
+
+                BotCommand::new(cmd.name.to_string(), description)
+            })
             .collect();
         let set_my_commands_params = SetMyCommandsParams::new(commands);
         self.api
@@ -67,7 +78,12 @@ impl<'a> CommandExecutor<'a> {
         self.commands.insert(command.name.to_string(), command);
     }
 
-    pub fn execute_command(&self, update: &Update, command_entity: &str, args: &str) {
+    pub fn execute_command(
+        &self,
+        update: &Update,
+        command_entity: &str,
+        args: &str,
+    ) -> Option<HandleUpdateError> {
         let mut args = args;
         if !args.is_empty() {
             args = &args[1..];
@@ -83,16 +99,20 @@ impl<'a> CommandExecutor<'a> {
                     "My name is {}, but the command was called for {}",
                     self.bot_prefix, bot_name
                 );
-                return;
+                return None;
             }
         }
 
         println!("Command name: {:?}", command_name);
 
         if let Some(command) = self.commands.get(command_name) {
-            if let Some(error) = (command.handler)(self.api, update, args) {
-                println!("{}", error);
+            if command.is_admin_only {
+                if !is_admin(update.message.as_ref()?.from.as_ref()?.id) {
+                    return None;
+                }
             }
+            return (command.handler)(self.api, update, args);
         }
+        None
     }
 }

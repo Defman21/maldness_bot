@@ -5,6 +5,7 @@ use frankenstein::{Api, ChatId, SendMessageParams, TelegramApi, Update};
 pub const UP: Command = Command {
     name: "up",
     description: "Check bot status",
+    is_admin_only: false,
     handler,
 };
 

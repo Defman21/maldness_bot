@@ -4,11 +4,13 @@ use std::time::Duration;
 
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
-use commands::{donate, up, CommandExecutor};
+use commands::{donate, set_paying_status, up, CommandExecutor};
 use errors::HandleUpdateError;
 
 mod commands;
 mod errors;
+mod globals;
+mod helpers;
 
 const BOT_COMMAND: &str = "bot_command";
 
@@ -31,7 +33,9 @@ fn handle_updates(
             let offset = entity.offset as usize;
             let length = entity.length as usize;
             let command = &text_str[offset..length];
-            executor.execute_command(&update, command, &text_str[length..]);
+            if let Some(err) =  executor.execute_command(&update, command, &text_str[length..]) {
+                return Err(err);
+            }
         }
 
         last_update_id = Some(update.update_id + 1);
@@ -47,6 +51,7 @@ fn main() {
     let mut executor = CommandExecutor::new(&api);
     executor.register_command(up::UP);
     executor.register_command(donate::DONATE);
+    executor.register_command(set_paying_status::SET_PAYING_STATUS);
     executor.set_commands();
 
     let mut update_params = GetUpdatesParams::new();
@@ -55,7 +60,8 @@ fn main() {
     loop {
         let result = api.get_updates(&update_params);
         match result {
-            Ok(response) => match handle_updates(response.result, &executor) {
+            Ok(response) => match
+            handle_updates(response.result, &executor) {
                 Ok(last_update_id) => update_params.set_offset(last_update_id),
                 Err(error) => println!("Error: {:?}", error),
             },

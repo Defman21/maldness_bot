@@ -7,3 +7,5 @@ edition = "2018"
 
 [dependencies]
 frankenstein = "0.4"
+postgres = {version = "0.19.1", features = ["with-time-0_2", "with-serde_json-1"]}
+serde_json = "1.0.64"

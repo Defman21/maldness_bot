@@ -6,6 +6,7 @@ use std::env;
 pub const DONATE: Command = Command {
     name: "donate",
     description: "Support the creator",
+    is_admin_only: false,
     handler,
 };
 
