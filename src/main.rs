@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
-use commands::{up, CommandExecutor};
+use commands::{donate, up, CommandExecutor};
 use errors::HandleUpdateError;
 
 mod commands;
@@ -45,7 +45,9 @@ fn main() {
     let api = Api::new(token.as_str());
 
     let mut executor = CommandExecutor::new(&api);
-    executor.register_command("up".to_string(), up::up);
+    executor.register_command(up::UP);
+    executor.register_command(donate::DONATE);
+    executor.set_commands();
 
     let mut update_params = GetUpdatesParams::new();
     update_params.set_allowed_updates(Some(vec!["message".to_string()]));
