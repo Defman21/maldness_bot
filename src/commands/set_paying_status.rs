@@ -1,6 +1,7 @@
 use crate::commands::Command;
 use crate::errors::HandleUpdateError;
 use frankenstein::{Api, Update};
+use postgres::Client;
 
 pub const SET_PAYING_STATUS: Command = Command {
     name: "set_paying_status",
@@ -9,6 +10,6 @@ pub const SET_PAYING_STATUS: Command = Command {
     handler,
 };
 
-fn handler(api: &Api, update: &Update, args: &str) -> Option<HandleUpdateError> {
+fn handler(_api: &Api, _update: &Update, _postgres: &mut Client, _args: &str) -> Option<HandleUpdateError> {
     None
 }

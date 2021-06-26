@@ -9,14 +9,12 @@ use errors::HandleUpdateError;
 
 mod commands;
 mod errors;
-mod globals;
-mod helpers;
 
 const BOT_COMMAND: &str = "bot_command";
 
 fn handle_updates(
     updates: Vec<Update>,
-    executor: &CommandExecutor,
+    executor: &mut CommandExecutor,
 ) -> Result<Option<u32>, HandleUpdateError> {
     let mut last_update_id: Option<u32> = None;
 
@@ -33,7 +31,7 @@ fn handle_updates(
             let offset = entity.offset as usize;
             let length = entity.length as usize;
             let command = &text_str[offset..length];
-            if let Some(err) =  executor.execute_command(&update, command, &text_str[length..]) {
+            if let Some(err) = executor.execute_command(&update, command, &text_str[length..]) {
                 return Err(err);
             }
         }
@@ -60,8 +58,7 @@ fn main() {
     loop {
         let result = api.get_updates(&update_params);
         match result {
-            Ok(response) => match
-            handle_updates(response.result, &executor) {
+            Ok(response) => match handle_updates(response.result, &mut executor) {
                 Ok(last_update_id) => update_params.set_offset(last_update_id),
                 Err(error) => println!("Error: {:?}", error),
             },

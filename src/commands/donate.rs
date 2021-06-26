@@ -2,6 +2,7 @@ use crate::commands::Command;
 use crate::errors::HandleUpdateError;
 use frankenstein::{Api, ChatId, SendMessageParams, TelegramApi, Update};
 use std::env;
+use postgres::Client;
 
 pub const DONATE: Command = Command {
     name: "donate",
@@ -10,7 +11,7 @@ pub const DONATE: Command = Command {
     handler,
 };
 
-fn handler(api: &Api, update: &Update, _args: &str) -> Option<HandleUpdateError> {
+fn handler(api: &Api, update: &Update, _postgres: &mut Client, _args: &str) -> Option<HandleUpdateError> {
     let message = update.message.as_ref()?;
     let text = match env::var("DONATE_TEXT") {
         Ok(val) => val,

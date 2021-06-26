@@ -1,6 +1,7 @@
 use crate::commands::Command;
 use crate::errors::HandleUpdateError;
 use frankenstein::{Api, ChatId, SendMessageParams, TelegramApi, Update};
+use postgres::Client;
 
 pub const UP: Command = Command {
     name: "up",
@@ -9,7 +10,7 @@ pub const UP: Command = Command {
     handler,
 };
 
-fn handler(api: &Api, update: &Update, args: &str) -> Option<HandleUpdateError> {
+fn handler(api: &Api, update: &Update, _postgres: &mut Client, args: &str) -> Option<HandleUpdateError> {
     let message = update.message.as_ref()?;
     let mut send_message_params = SendMessageParams::new(
         ChatId::Integer(message.chat.id),
