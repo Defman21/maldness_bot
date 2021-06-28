@@ -9,6 +9,7 @@ use errors::HandleUpdateError;
 
 mod commands;
 mod errors;
+mod services;
 
 const BOT_COMMAND: &str = "bot_command";
 
@@ -32,7 +33,7 @@ fn handle_updates(
             let length = entity.length as usize;
             let command = &text_str[offset..length];
             if let Some(err) = executor.execute_command(&update, command, &text_str[length..]) {
-                return Err(err);
+                println!("Error: {}", err);
             }
         }
 
