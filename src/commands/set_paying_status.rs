@@ -1,9 +1,12 @@
+use std::convert::TryFrom;
+
+use frankenstein::{Api, Update};
+use postgres::Client;
+
 use crate::commands::Command;
 use crate::errors::HandleUpdateError;
 use crate::services::user::functions;
-use frankenstein::{Api, Update};
-use postgres::Client;
-use std::convert::TryFrom;
+use crate::settings::Settings;
 
 pub const SET_PAYING_STATUS: Command = Command {
     name: "set_paying_status",
@@ -16,6 +19,7 @@ fn handler(
     _api: &Api,
     update: &Update,
     postgres: &mut Client,
+    _settings: &Settings,
     args: &str,
 ) -> Option<HandleUpdateError> {
     let is_paying = match args.parse::<bool>() {

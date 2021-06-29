@@ -1,15 +1,17 @@
-use std::env;
 use std::thread::sleep;
 use std::time::Duration;
 
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
+use crate::settings::Settings;
 use commands::{donate, set_paying_status, up, CommandExecutor};
 use errors::HandleUpdateError;
+use std::error::Error;
 
 mod commands;
 mod errors;
 mod services;
+mod settings;
 
 const BOT_COMMAND: &str = "bot_command";
 
@@ -43,11 +45,11 @@ fn handle_updates(
     Ok(last_update_id)
 }
 
-fn main() {
-    let token = env::var("BOT_TOKEN").expect("BOT_TOKEN is not defined");
-    let api = Api::new(token.as_str());
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut settings = Settings::new()?;
+    let api = Api::new(settings.token.as_str());
 
-    let mut executor = CommandExecutor::new(&api);
+    let mut executor = CommandExecutor::new(&api, &mut settings);
     executor.register_command(up::UP);
     executor.register_command(donate::DONATE);
     executor.register_command(set_paying_status::SET_PAYING_STATUS);

@@ -2,14 +2,14 @@ use frankenstein::{Api, BotCommand, SetMyCommandsParams, TelegramApi, Update};
 use std::collections::HashMap;
 
 use crate::errors::HandleUpdateError;
+use crate::settings::Settings;
 use postgres::{Client, NoTls};
-use std::env;
 
 pub mod donate;
 pub mod set_paying_status;
 pub mod up;
 
-type Handler = fn(&Api, &Update, &mut Client, &str) -> Option<HandleUpdateError>;
+type Handler = fn(&Api, &Update, &mut Client, &Settings, &str) -> Option<HandleUpdateError>;
 
 pub struct Command {
     pub name: &'static str,
@@ -20,24 +20,21 @@ pub struct Command {
 
 pub struct CommandExecutor<'a> {
     api: &'a Api,
+    settings: &'a Settings,
     commands: HashMap<String, Command>,
     bot_prefix: String,
-    admins: Vec<u64>,
     postgres: Client,
 }
 
 impl<'a> CommandExecutor<'a> {
-    pub fn new(api: &'a Api) -> CommandExecutor<'a> {
+    pub fn new(api: &'a Api, settings: &'a mut Settings) -> CommandExecutor<'a> {
         let mut executor = CommandExecutor {
             api,
+            settings,
             commands: HashMap::new(),
             bot_prefix: String::new(),
-            admins: Vec::new(),
-            postgres: Client::connect(
-                env::var("POSTGRES_DSN").expect("No POSTGRES_DSN").as_str(),
-                NoTls,
-            )
-            .expect("Failed to connect to postgres"),
+            postgres: Client::connect(settings.postgres_dsn.as_str(), NoTls)
+                .expect("Failed to connect to postgres"),
         };
 
         match api.get_me() {
@@ -53,17 +50,11 @@ impl<'a> CommandExecutor<'a> {
             }
         };
 
-        executor.admins = env::var("ADMINS_IDS")
-            .expect("No ADMINS_IDS variable")
-            .split(' ')
-            .map(|i| str::parse::<u64>(i).expect("Failed to parse one of ADMINS_IDS entries"))
-            .collect();
-
         executor
     }
 
     fn is_admin(&self, user_id: u64) -> bool {
-        self.admins.contains(&user_id)
+        self.settings.admins.contains(&user_id)
     }
 
     pub fn set_bot_prefix(&mut self, prefix: String) {
@@ -129,7 +120,7 @@ impl<'a> CommandExecutor<'a> {
             if command.is_admin_only && !self.is_admin(update.message.as_ref()?.from.as_ref()?.id) {
                 return None;
             }
-            return (command.handler)(self.api, update, &mut self.postgres, args);
+            return (command.handler)(self.api, update, &mut self.postgres, self.settings, args);
         }
         None
     }
