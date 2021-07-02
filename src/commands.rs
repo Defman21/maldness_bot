@@ -1,15 +1,18 @@
-use frankenstein::{Api, BotCommand, SetMyCommandsParams, TelegramApi, Update};
 use std::collections::HashMap;
+
+use frankenstein::{Api, BotCommand, SetMyCommandsParams, TelegramApi, Update};
+use postgres::{Client, NoTls};
 
 use crate::errors::HandleUpdateError;
 use crate::settings::Settings;
-use postgres::{Client, NoTls};
 
 pub mod donate;
 pub mod set_paying_status;
 pub mod up;
+pub mod weather;
 
-type Handler = fn(&Api, &Update, &mut Client, &Settings, &str) -> Option<HandleUpdateError>;
+pub type CommandResult<T> = Result<(), T>;
+type Handler = fn(&Api, &Update, &mut Client, &Settings, &str) -> CommandResult<HandleUpdateError>;
 
 pub struct Command {
     pub name: &'static str,
@@ -120,7 +123,16 @@ impl<'a> CommandExecutor<'a> {
             if command.is_admin_only && !self.is_admin(update.message.as_ref()?.from.as_ref()?.id) {
                 return None;
             }
-            return (command.handler)(self.api, update, &mut self.postgres, self.settings, args);
+            return match (command.handler)(
+                self.api,
+                update,
+                &mut self.postgres,
+                self.settings,
+                args,
+            ) {
+                Ok(_) => None,
+                Err(e) => Some(e),
+            };
         }
         None
     }

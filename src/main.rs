@@ -1,12 +1,14 @@
+use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;
 
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
-use crate::settings::Settings;
-use commands::{donate, set_paying_status, up, CommandExecutor};
+use commands::{CommandExecutor, donate, set_paying_status, up};
 use errors::HandleUpdateError;
-use std::error::Error;
+
+use crate::commands::weather;
+use crate::settings::Settings;
 
 mod commands;
 mod errors;
@@ -22,10 +24,20 @@ fn handle_updates(
     let mut last_update_id: Option<u32> = None;
 
     for update in updates {
-        let message = update.message.as_ref().ok_or(HandleUpdateError::Skip)?;
-        let text = message.text.as_ref().ok_or(HandleUpdateError::Skip)?;
+        let message = update
+            .message
+            .as_ref()
+            .ok_or(HandleUpdateError::Skip(update.update_id))?;
+        let text = message
+            .text
+            .as_ref()
+            .ok_or(HandleUpdateError::Skip(update.update_id))?;
 
-        for entity in message.entities.as_ref().ok_or(HandleUpdateError::Skip)? {
+        for entity in message
+            .entities
+            .as_ref()
+            .ok_or(HandleUpdateError::Skip(update.update_id))?
+        {
             if entity.type_field.as_str() != BOT_COMMAND {
                 continue;
             }
@@ -39,7 +51,7 @@ fn handle_updates(
             }
         }
 
-        last_update_id = Some(update.update_id + 1);
+        last_update_id = Some(update.update_id);
     }
 
     Ok(last_update_id)
@@ -53,6 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     executor.register_command(up::UP);
     executor.register_command(donate::DONATE);
     executor.register_command(set_paying_status::SET_PAYING_STATUS);
+    executor.register_command(weather::WEATHER);
     executor.set_commands();
 
     let mut update_params = GetUpdatesParams::new();
@@ -62,8 +75,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         let result = api.get_updates(&update_params);
         match result {
             Ok(response) => match handle_updates(response.result, &mut executor) {
-                Ok(last_update_id) => update_params.set_offset(last_update_id),
-                Err(error) => println!("Error: {:?}", error),
+                Ok(Some(last_update_id)) => update_params.set_offset(Some(last_update_id + 1)),
+                Ok(None) => {}
+                Err(error) => {
+                    println!("Error: {:?}", error);
+
+                    match error {
+                        HandleUpdateError::Skip(last_update_id) => {
+                            update_params.set_offset(Some(last_update_id + 1))
+                        }
+                        _ => {
+                            println!("Unexpected error from the updates handler, could not set the offset");
+                        }
+                    };
+                }
             },
             Err(error) => println!("Error: {:?}", error),
         };

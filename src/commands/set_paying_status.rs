@@ -1,9 +1,10 @@
 use std::convert::TryFrom;
+use std::str::ParseBoolError;
 
 use frankenstein::{Api, Update};
 use postgres::Client;
 
-use crate::commands::Command;
+use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
 use crate::services::user::functions;
 use crate::settings::Settings;
@@ -21,32 +22,27 @@ fn handler(
     postgres: &mut Client,
     _settings: &Settings,
     args: &str,
-) -> Option<HandleUpdateError> {
-    let is_paying = match args.parse::<bool>() {
-        Ok(val) => val,
-        Err(_) => {
-            return Some(HandleUpdateError::Command(
-                "arg is not a boolean".to_string(),
-            ))
-        }
-    };
+) -> CommandResult<HandleUpdateError> {
+    let is_paying: bool = args
+        .parse()
+        .map_err(|e: ParseBoolError| HandleUpdateError::Command(e.to_string()))?;
 
-    let user_id: i64 = match i64::try_from(
+    let user_id: i64 = i64::try_from(
         update
             .message
-            .as_ref()?
+            .as_ref()
+            .ok_or_else(|| HandleUpdateError::Command("message is empty".to_string()))?
             .reply_to_message
-            .as_ref()?
+            .as_ref()
+            .ok_or_else(|| HandleUpdateError::Command("no reply for the message".to_string()))?
             .from
-            .as_ref()?
+            .as_ref()
+            .ok_or_else(|| HandleUpdateError::Command("no from data".to_string()))?
             .id,
-    ) {
-        Ok(val) => val,
-        Err(err) => return Some(HandleUpdateError::Command(err.to_string())),
-    };
+    )
+        .map_err(|e| HandleUpdateError::Command(e.to_string()))?;
 
-    if let Err(err) = functions::set_paying_status(postgres, user_id, is_paying) {
-        return Some(HandleUpdateError::Command(err.to_string()));
-    }
-    None
+    functions::set_paying_status(postgres, user_id, is_paying)
+        .map(|_| ())
+        .map_err(|e| HandleUpdateError::Command(e.to_string()))
 }

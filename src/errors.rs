@@ -5,7 +5,7 @@ use std::fmt::Debug;
 #[derive(Debug)]
 pub enum HandleUpdateError {
     Command(String),
-    Skip,
+    Skip(u32),
     Api(frankenstein::Error),
 }
 
@@ -21,7 +21,7 @@ impl fmt::Display for HandleUpdateError {
                     write!(f, "API error: {} {}", err.error_code, err.description)
                 }
             },
-            HandleUpdateError::Skip => write!(f, "Update skipped"),
+            HandleUpdateError::Skip(_) => write!(f, "Update skipped"),
         }
     }
 }
