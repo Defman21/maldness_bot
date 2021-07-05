@@ -1,9 +1,13 @@
 use std::collections::HashMap;
 
-use frankenstein::{Api, BotCommand, SetMyCommandsParams, TelegramApi, Update};
+use frankenstein::{
+    Api, BotCommand, ChatId, Location, Message, SendMessageParams, SetMyCommandsParams,
+    TelegramApi, Update,
+};
 use postgres::{Client, NoTls};
 
 use crate::errors::HandleUpdateError;
+use crate::services::weather::{format_weather_data, get_weather, Identifier};
 use crate::settings::Settings;
 
 pub mod donate;
@@ -13,6 +17,8 @@ pub mod weather;
 
 pub type CommandResult<T> = Result<(), T>;
 type Handler = fn(&Api, &Update, &mut Client, &Settings, &str) -> CommandResult<HandleUpdateError>;
+
+const BOT_COMMAND: &str = "bot_command";
 
 pub struct Command {
     pub name: &'static str,
@@ -135,5 +141,82 @@ impl<'a> CommandExecutor<'a> {
             };
         }
         None
+    }
+
+    fn handle_text_message(
+        &mut self,
+        update: &Update,
+        message: &Message,
+        text: &str,
+    ) -> Result<(), HandleUpdateError> {
+        for entity in message
+            .entities
+            .as_ref()
+            .ok_or(HandleUpdateError::Skip(0))?
+        {
+            if entity.type_field.as_str() != BOT_COMMAND {
+                continue;
+            }
+
+            let offset = entity.offset as usize;
+            let length = entity.length as usize;
+            let command = &text[offset..length];
+            return match self.execute_command(&update, command, &text[length..]) {
+                Some(e) => Err(e),
+                None => Ok(()),
+            };
+        }
+
+        Ok(())
+    }
+
+    fn handle_location(
+        &mut self,
+        _update: &Update,
+        message: &Message,
+        location: &Location,
+    ) -> Result<(), HandleUpdateError> {
+        let weather_data = get_weather(
+            Identifier::Location(location.latitude, location.longitude),
+            self.settings,
+        )?;
+
+        let mut message_params = SendMessageParams::new(
+            ChatId::Integer(message.chat.id),
+            format_weather_data(&weather_data),
+        );
+        message_params.set_reply_to_message_id(Some(message.message_id));
+
+        self.api
+            .send_message(&message_params)
+            .map_err(HandleUpdateError::Api)
+            .map(|_| ())
+    }
+
+    pub fn handle_update(&mut self, update: &Update) -> Result<(), HandleUpdateError> {
+        let message = update
+            .message
+            .as_ref()
+            .ok_or(HandleUpdateError::Skip(update.update_id))?;
+
+        if let Some(err) = message.text.as_ref().and_then(|text| {
+            self.handle_text_message(update, message, text.as_str())
+                .err()
+        }) {
+            match err {
+                HandleUpdateError::Skip(_) => {}
+                _ => return Err(err),
+            };
+        };
+
+        if let Some(err) = message
+            .location
+            .as_ref()
+            .and_then(|loc| self.handle_location(update, message, loc).err())
+        {
+            return Err(err);
+        };
+
+        Ok(())
     }
 }

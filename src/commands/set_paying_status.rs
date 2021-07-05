@@ -40,7 +40,7 @@ fn handler(
             .ok_or_else(|| HandleUpdateError::Command("no from data".to_string()))?
             .id,
     )
-        .map_err(|e| HandleUpdateError::Command(e.to_string()))?;
+    .map_err(|e| HandleUpdateError::Command(e.to_string()))?;
 
     functions::set_paying_status(postgres, user_id, is_paying)
         .map(|_| ())

@@ -1,9 +1,9 @@
 use frankenstein::{Api, ChatId, SendMessageParams, TelegramApi, Update};
 use postgres::Client;
-use serde::Deserialize;
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
+use crate::services::weather::{format_weather_data, get_weather, Identifier, WeatherResponse};
 use crate::settings::Settings;
 
 pub const WEATHER: Command = Command {
@@ -12,24 +12,6 @@ pub const WEATHER: Command = Command {
     is_admin_only: false,
     handler,
 };
-
-#[derive(Debug, Deserialize)]
-struct WeatherResponseMain {
-    feels_like: f64,
-    temp: f64,
-}
-
-#[derive(Debug, Deserialize)]
-struct WeatherResponseWeather {
-    description: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct WeatherResponse {
-    name: String,
-    main: WeatherResponseMain,
-    weather: Vec<WeatherResponseWeather>,
-}
 
 fn handler(
     api: &Api,
@@ -46,55 +28,20 @@ fn handler(
 
     if let Some(reply) = message.reply_to_message.as_ref() {
         if let Some(location) = reply.location.as_ref() {
-            let latitude = location.latitude.to_string();
-            let longitude = location.longitude.to_string();
-            result = Some(
-                ureq::get("https://api.openweathermap.org/data/2.5/weather")
-                    .query("lat", latitude.as_str())
-                    .query("lon", longitude.as_str())
-                    .query("units", settings.open_weather.units.as_str())
-                    .query("lang", settings.open_weather.language.as_str())
-                    .query("appid", settings.open_weather.api_key.as_str())
-                    .call()
-                    .map_err(|e| HandleUpdateError::Command(e.to_string()))?
-                    .into_json::<WeatherResponse>()
-                    .map_err(|e| HandleUpdateError::Command(e.to_string()))?,
-            );
+            result = Some(get_weather(
+                Identifier::Location(location.latitude, location.longitude),
+                settings,
+            )?);
         }
     }
 
     if !args.is_empty() {
-        result = Some(
-            ureq::get("https://api.openweathermap.org/data/2.5/weather")
-                .query("q", args)
-                .query("units", settings.open_weather.units.as_str())
-                .query("lang", settings.open_weather.language.as_str())
-                .query("appid", settings.open_weather.api_key.as_str())
-                .call()
-                .map_err(|e| HandleUpdateError::Command(e.to_string()))?
-                .into_json::<WeatherResponse>()
-                .map_err(|e| HandleUpdateError::Command(e.to_string()))?,
-        )
+        result = Some(get_weather(Identifier::Name(args.to_string()), settings)?);
     }
 
     if let Some(data) = result {
-        let mut text = format!(
-            "{}: {} (ощущается как {})",
-            data.name, data.main.temp, data.main.feels_like
-        );
-        if !data.weather.is_empty() {
-            let description: String = data
-                .weather
-                .iter()
-                .map(|i| i.description.clone())
-                .collect::<Vec<String>>()
-                .join(", ");
-            text += ", ";
-            text += description.as_str();
-        }
-
         let mut send_message_params =
-            SendMessageParams::new(ChatId::Integer(message.chat.id), text);
+            SendMessageParams::new(ChatId::Integer(message.chat.id), format_weather_data(&data));
         send_message_params.set_reply_to_message_id(Some(message.message_id));
 
         return api

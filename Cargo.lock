@@ -235,11 +235,11 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b8b49bebcd55ef13bbf271258f2757a450e0881111e8513c50ea4c7e0c1cbc7"
 dependencies = [
-    "mime_guess 2.0.3",
-    "multipart",
-    "serde 1.0.126",
-    "serde_json",
-    "ureq",
+ "mime_guess 2.0.3",
+ "multipart",
+ "serde 1.0.126",
+ "serde_json",
+ "ureq",
 ]
 
 [[package]]
@@ -543,12 +543,12 @@ dependencies = [
 name = "maldness_bot"
 version = "0.1.0"
 dependencies = [
-    "config",
-    "frankenstein",
-    "postgres",
-    "serde 1.0.126",
-    "serde_json",
-    "ureq",
+ "config",
+ "frankenstein",
+ "postgres",
+ "serde 1.0.126",
+ "serde_json",
+ "ureq",
 ]
 
 [[package]]
@@ -1690,16 +1690,16 @@ version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2475a6781e9bc546e7b64f4013d2f4032c8c6a40fcffd7c6f4ee734a890972ab"
 dependencies = [
-    "base64 0.13.0",
-    "chunked_transfer 1.4.0",
-    "log 0.4.14",
-    "once_cell",
-    "rustls",
-    "serde 1.0.126",
-    "serde_json",
-    "url 2.2.2",
-    "webpki",
-    "webpki-roots",
+ "base64 0.13.0",
+ "chunked_transfer 1.4.0",
+ "log 0.4.14",
+ "once_cell",
+ "rustls",
+ "serde 1.0.126",
+ "serde_json",
+ "url 2.2.2",
+ "webpki",
+ "webpki-roots",
 ]
 
 [[package]]
