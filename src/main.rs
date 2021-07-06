@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
-use commands::{donate, set_paying_status, up, CommandExecutor};
+use commands::{CommandExecutor, donate, set_paying_status, up};
 
 use crate::commands::weather;
 use crate::settings::Settings;
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     executor.register_command(donate::DONATE);
     executor.register_command(set_paying_status::SET_PAYING_STATUS);
     executor.register_command(weather::WEATHER);
-    executor.set_commands();
+    executor.send_my_commands();
 
     let mut update_params = GetUpdatesParams::new();
     update_params.set_allowed_updates(Some(vec!["message".to_string()]));

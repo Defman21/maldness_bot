@@ -70,7 +70,7 @@ impl<'a> CommandExecutor<'a> {
         self.bot_prefix = prefix;
     }
 
-    pub fn set_commands(&self) {
+    pub fn send_my_commands(&self) {
         let commands: Vec<BotCommand> = self
             .commands
             .values()
