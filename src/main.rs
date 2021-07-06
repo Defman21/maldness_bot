@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
-use commands::{CommandExecutor, donate, set_paying_status, up};
+use commands::{donate, set_paying_status, up, CommandExecutor};
 
 use crate::commands::weather;
 use crate::settings::Settings;

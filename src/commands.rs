@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use frankenstein::{
-    Api, BotCommand, ChatId, Location, Message, SendMessageParams, SetMyCommandsParams,
-    TelegramApi, Update,
+    Api, BotCommand, ChatId, Location, Message, MessageEntity, SendMessageParams,
+    SetMyCommandsParams, TelegramApi, Update,
 };
 use postgres::{Client, NoTls};
 
@@ -143,31 +143,20 @@ impl<'a> CommandExecutor<'a> {
         None
     }
 
-    fn handle_text_message(
+    fn handle_command(
         &mut self,
         update: &Update,
-        message: &Message,
+        command_entity: &MessageEntity,
         text: &str,
     ) -> Result<(), HandleUpdateError> {
-        for entity in message
-            .entities
-            .as_ref()
-            .ok_or(HandleUpdateError::Skip(0))?
-        {
-            if entity.type_field.as_str() != BOT_COMMAND {
-                continue;
-            }
+        let offset = command_entity.offset as usize;
+        let length = command_entity.length as usize;
+        let command = &text[offset..length];
 
-            let offset = entity.offset as usize;
-            let length = entity.length as usize;
-            let command = &text[offset..length];
-            return match self.execute_command(&update, command, &text[length..]) {
-                Some(e) => Err(e),
-                None => Ok(()),
-            };
+        match self.execute_command(&update, command, &text[length..]) {
+            Some(e) => Err(e),
+            None => Ok(()),
         }
-
-        Ok(())
     }
 
     fn handle_location(
@@ -193,14 +182,23 @@ impl<'a> CommandExecutor<'a> {
             .map(|_| ())
     }
 
+    fn find_command_entity(message: &Message) -> Option<&MessageEntity> {
+        message
+            .entities
+            .as_ref()?
+            .iter()
+            .find(|entity| entity.type_field.as_str() == BOT_COMMAND)
+    }
+
     pub fn handle_update(&mut self, update: &Update) -> Result<(), HandleUpdateError> {
         let message = update
             .message
             .as_ref()
             .ok_or(HandleUpdateError::Skip(update.update_id))?;
 
-        if let Some(err) = message.text.as_ref().and_then(|text| {
-            self.handle_text_message(update, message, text.as_str())
+        if let Some(err) = Self::find_command_entity(message).and_then(|entity| {
+            // If there's a MessageEntity, there's some text which we can unwrap without panic
+            self.handle_command(update, entity, message.text.as_ref().unwrap())
                 .err()
         }) {
             match err {
