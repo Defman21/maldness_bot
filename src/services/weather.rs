@@ -11,6 +11,7 @@ pub struct WeatherResponseMain {
 
 #[derive(Debug, Deserialize)]
 pub struct WeatherResponseWeather {
+    pub id: i64,
     pub description: String,
 }
 
@@ -82,16 +83,57 @@ pub fn get_weather(
     Ok(result)
 }
 
+fn get_icon<'a>(id: i64) -> Option<&'a str> {
+    let group = id / 100;
+    let remainder = id % 100;
+
+    let emoji = match group {
+        2 => "⛈",
+        3 => "🌧",
+        5 => "🌧",
+        6 => "🌨",
+        7 => match remainder {
+            1 | 21 | 41 => "🌫",
+            11 => "🔥💨",
+            31 | 51 | 61 => "🏜💨",
+            62 => "🌋💨",
+            71 | 81 => "🌪",
+            _ => "",
+        },
+        8 => match remainder {
+            0 => "☀️",
+            1 => "🌤",
+            2 => "⛅️",
+            3 => "🌥",
+            4 => "☁️",
+            _ => "",
+        },
+        _ => "",
+    };
+
+    if !emoji.is_empty() {
+        return Some(emoji);
+    }
+
+    None
+}
+
 pub fn format_weather_data(data: &WeatherResponse) -> String {
     let mut text = format!(
-        "{}: {} (ощущается как {})",
+        "{}: {:+.1} (ощущается как {:+.1})",
         data.name, data.main.temp, data.main.feels_like
     );
     if !data.weather.is_empty() {
         let description: String = data
             .weather
             .iter()
-            .map(|i| i.description.clone())
+            .map(|i| {
+                if let Some(emoji) = get_icon(i.id) {
+                    format!("{} {}", emoji, i.description)
+                } else {
+                    i.description.clone()
+                }
+            })
             .collect::<Vec<String>>()
             .join(", ");
         text += ", ";
