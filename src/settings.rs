@@ -36,6 +36,8 @@ pub struct Settings {
     // to clone calls every time when accessing e.g. commands["donate"]["some_option"]
     pub commands: HashMap<String, HashMap<String, Value>>,
     pub open_weather: OpenWeatherSettings,
+    allowed_chats: Option<Vec<i64>>,
+    _allowed_chats_hashmap: Option<HashMap<i64, ()>>,
 }
 
 impl Settings {
@@ -44,25 +46,40 @@ impl Settings {
         s.merge(config::File::with_name("config"))?
             .merge(config::Environment::with_prefix("bot"))?;
 
-        let mut s = s.try_into::<Self>().map_err(|e| ConfigError::Message(e.to_string()))?;
+        let mut s = s
+            .try_into::<Self>()
+            .map_err(|e| ConfigError::Message(e.to_string()))?;
 
         if s.open_weather.message_format.is_none() {
             s.open_weather.message_format = Some(
-                "{{ name }}: {{ temp }} (feels like {{ feels_like }}), {{ description }}".into()
+                "{{ name }}: {{ temp }} (feels like {{ feels_like }}), {{ description }}".into(),
             );
         }
 
-        s.open_weather._message_format_tpl =
-            Some(liquid::ParserBuilder::with_stdlib()
+        s.open_weather._message_format_tpl = Some(
+            liquid::ParserBuilder::with_stdlib()
                 .build()
                 .map_err(|e| ConfigError::Message(e.to_string()))?
                 .parse(s.open_weather.message_format.as_ref().unwrap().as_str())
                 .map_err(|e| {
                     println!("There's an error in your [open_weather].message_format string!");
                     ConfigError::Message(e.to_string())
-                })?
-            );
+                })?,
+        );
+
+        if let Some(allowed_chats) = s.allowed_chats.as_ref() {
+            s._allowed_chats_hashmap =
+                Some(allowed_chats.iter().map(|i| (i.to_owned(), ())).collect());
+        };
 
         Ok(s)
+    }
+
+    pub fn is_chat_allowed(&self, chat_id: i64) -> bool {
+        if let Some(allowed_chats_map) = self._allowed_chats_hashmap.as_ref() {
+            allowed_chats_map.contains_key(&chat_id)
+        } else {
+            true
+        }
     }
 }

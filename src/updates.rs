@@ -11,6 +11,7 @@ use crate::services::weather::{format_weather_data, get_weather, Identifier};
 use crate::settings::Settings;
 
 const BOT_COMMAND: &str = "bot_command";
+const CHAT_TYPE_PRIVATE: &str = "private";
 
 pub struct UpdateHandler<'a> {
     api: &'a Api,
@@ -127,10 +128,16 @@ impl<'a> UpdateHandler<'a> {
             .as_ref()
             .ok_or(HandleUpdateError::Skip(update.update_id))?;
 
+        // TODO: more control over allowed updates (maybe a per-type setting with allowed chats?)
+        if message.chat.type_field.as_str() != CHAT_TYPE_PRIVATE
+            && !self.settings.is_chat_allowed(message.chat.id)
+        {
+            return Err(HandleUpdateError::Skip(update.update_id));
+        }
+
         if let Some(err) = Self::find_command_entity(message).and_then(|entity| {
             // If there's a MessageEntity, there's some text which we can unwrap without panic
-            self.handle_command(update, message, entity)
-                .err()
+            self.handle_command(update, message, entity).err()
         }) {
             match err {
                 HandleUpdateError::Skip(_) => {}
