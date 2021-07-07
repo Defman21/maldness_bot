@@ -62,9 +62,10 @@ impl<'a> UpdateHandler<'a> {
     fn handle_command(
         &mut self,
         update: &Update,
+        message: &Message,
         command_entity: &MessageEntity,
-        text: &str,
     ) -> Result<(), HandleUpdateError> {
+        let text = message.text.as_ref().unwrap();
         let offset = command_entity.offset as usize;
         let length = command_entity.length as usize;
         let command = &text[offset..length];
@@ -74,6 +75,7 @@ impl<'a> UpdateHandler<'a> {
             &mut self.postgres,
             &update,
             command,
+            &message,
             &text[length..],
         ) {
             Some(e) => Err(e),
@@ -127,7 +129,7 @@ impl<'a> UpdateHandler<'a> {
 
         if let Some(err) = Self::find_command_entity(message).and_then(|entity| {
             // If there's a MessageEntity, there's some text which we can unwrap without panic
-            self.handle_command(update, entity, message.text.as_ref().unwrap())
+            self.handle_command(update, message, entity)
                 .err()
         }) {
             match err {

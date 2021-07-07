@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use frankenstein::{Api, Update};
+use frankenstein::{Api, Update, Message};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -16,15 +16,14 @@ pub const SET_MY_LOCATION: Command = Command {
 
 fn handler(
     _api: &Api,
-    update: &Update,
+    _update: &Update,
     postgres: &mut PgConnection,
     _settings: &Settings,
+    message: &Message,
     _args: &str,
 ) -> CommandResult<HandleUpdateError> {
-    let location = update
-        .message
-        .as_ref()
-        .ok_or_else(|| HandleUpdateError::Command("message is empty".into()))?
+    let location =
+        message
         .reply_to_message
         .as_ref()
         .ok_or_else(|| HandleUpdateError::Command("reply to message is empty".into()))?
@@ -32,7 +31,7 @@ fn handler(
         .as_ref()
         .ok_or_else(|| HandleUpdateError::Command("location in the reply is empty".into()))?;
 
-    let user_id = helpers::get_user_id(update.message.as_ref().unwrap())?;
+    let user_id = helpers::get_user_id(message)?;
 
     functions::set_location(postgres, user_id, location.latitude, location.longitude)
         .map(|_| ())

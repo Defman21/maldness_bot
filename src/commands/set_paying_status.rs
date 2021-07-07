@@ -1,7 +1,7 @@
 use std::str::ParseBoolError;
 
 use diesel::PgConnection;
-use frankenstein::{Api, Update};
+use frankenstein::{Api, Update, Message};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -18,16 +18,17 @@ pub const SET_PAYING_STATUS: Command = Command {
 
 fn handler(
     _api: &Api,
-    update: &Update,
+    _update: &Update,
     postgres: &mut PgConnection,
     _settings: &Settings,
+    message: &Message,
     args: &str,
 ) -> CommandResult<HandleUpdateError> {
     let is_paying: bool = args
         .parse()
         .map_err(|e: ParseBoolError| HandleUpdateError::Command(e.to_string()))?;
 
-    let user_id = helpers::get_user_id(update.message.as_ref().unwrap())?;
+    let user_id = helpers::get_user_id(message)?;
 
     functions::set_paying_status(postgres, user_id, is_paying)
         .map(|_| ())

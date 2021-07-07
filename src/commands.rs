@@ -1,7 +1,7 @@
 use crate::errors::HandleUpdateError;
 use crate::settings::Settings;
 use diesel::PgConnection;
-use frankenstein::{Api, BotCommand, Update};
+use frankenstein::{Api, BotCommand, Update, Message};
 use std::collections::HashMap;
 
 pub mod donate;
@@ -12,7 +12,7 @@ pub mod weather;
 
 pub type CommandResult<T> = Result<(), T>;
 type Handler =
-    fn(&Api, &Update, &mut PgConnection, &Settings, &str) -> CommandResult<HandleUpdateError>;
+    fn(&Api, &Update, &mut PgConnection, &Settings, &Message, &str) -> CommandResult<HandleUpdateError>;
 
 pub struct Command {
     pub name: &'static str,
@@ -69,6 +69,7 @@ impl<'a> CommandsExecutor<'a> {
         postgres: &mut PgConnection,
         update: &Update,
         command_entity: &str,
+        message: &Message,
         args: &str,
     ) -> Option<HandleUpdateError> {
         let mut args = args;
@@ -96,7 +97,7 @@ impl<'a> CommandsExecutor<'a> {
             if command.is_admin_only && !self.is_admin(update.message.as_ref()?.from.as_ref()?.id) {
                 return None;
             }
-            return match (command.handler)(self.tg_api, update, postgres, self.settings, args) {
+            return match (command.handler)(self.tg_api, update, postgres, self.settings, message, args) {
                 Ok(_) => None,
                 Err(e) => Some(e),
             };

@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use frankenstein::{Api, ChatId, SendMessageParams, TelegramApi, Update};
+use frankenstein::{Api, ChatId, SendMessageParams, TelegramApi, Update, Message};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -14,9 +14,10 @@ pub const DONATE: Command = Command {
 
 fn handler(
     api: &Api,
-    update: &Update,
+    _update: &Update,
     _postgres: &mut PgConnection,
     settings: &Settings,
+    message: &Message,
     _args: &str,
 ) -> CommandResult<HandleUpdateError> {
     // TODO: remove clone
@@ -27,10 +28,6 @@ fn handler(
         .clone()
         .into_str()
         .map_err(|e| HandleUpdateError::Command(e.to_string()))?;
-    let message = update
-        .message
-        .as_ref()
-        .ok_or_else(|| HandleUpdateError::Command("message is empty".to_string()))?;
     let mut send_message_params = SendMessageParams::new(ChatId::Integer(message.chat.id), text);
     send_message_params.set_reply_to_message_id(Some(message.message_id));
 

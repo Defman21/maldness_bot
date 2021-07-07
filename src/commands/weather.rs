@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use frankenstein::{Api, ChatId, Location, SendMessageParams, TelegramApi, Update};
+use frankenstein::{Api, ChatId, Location, SendMessageParams, TelegramApi, Update, Message};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -18,15 +18,12 @@ pub const WEATHER: Command = Command {
 
 fn handler(
     api: &Api,
-    update: &Update,
+    _update: &Update,
     postgres: &mut PgConnection,
     settings: &Settings,
+    message: &Message,
     args: &str,
 ) -> CommandResult<HandleUpdateError> {
-    let message = update
-        .message
-        .as_ref()
-        .ok_or_else(|| HandleUpdateError::Command("no message".to_string()))?;
     let mut result: Option<WeatherResponse> = None;
 
     if let Some(reply) = message.reply_to_message.as_ref() {
