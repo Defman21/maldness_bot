@@ -52,7 +52,7 @@ impl From<io::Error> for WeatherError {
 }
 
 pub enum Identifier {
-    Location(f64, f64),
+    Location { latitude: f64, longitude: f64 },
     Name(String),
 }
 
@@ -66,7 +66,10 @@ pub fn get_weather(
         .query("appid", settings.open_weather.api_key.as_str());
 
     match identifier {
-        Identifier::Location(latitude, longitude) => {
+        Identifier::Location {
+            latitude,
+            longitude,
+        } => {
             let latitude = latitude.to_string();
             let longitude = longitude.to_string();
             request = request

@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::str::ParseBoolError;
 
 use diesel::PgConnection;
@@ -6,6 +5,7 @@ use frankenstein::{Api, Update};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
+use crate::helpers;
 use crate::services::user::functions;
 use crate::settings::Settings;
 
@@ -27,20 +27,7 @@ fn handler(
         .parse()
         .map_err(|e: ParseBoolError| HandleUpdateError::Command(e.to_string()))?;
 
-    let user_id: i64 = i64::try_from(
-        update
-            .message
-            .as_ref()
-            .ok_or_else(|| HandleUpdateError::Command("message is empty".to_string()))?
-            .reply_to_message
-            .as_ref()
-            .ok_or_else(|| HandleUpdateError::Command("no reply for the message".to_string()))?
-            .from
-            .as_ref()
-            .ok_or_else(|| HandleUpdateError::Command("no from data".to_string()))?
-            .id,
-    )
-    .map_err(|e| HandleUpdateError::Command(e.to_string()))?;
+    let user_id = helpers::get_user_id(update.message.as_ref().unwrap())?;
 
     functions::set_paying_status(postgres, user_id, is_paying)
         .map(|_| ())

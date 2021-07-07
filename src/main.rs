@@ -4,14 +4,13 @@ use std::time::Duration;
 
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
-use commands::{donate, set_paying_status, up};
-use updates::UpdateHandler;
-
-use crate::commands::weather;
+use crate::commands::{donate, set_my_location, set_paying_status, up, weather};
 use crate::settings::Settings;
+use crate::updates::UpdateHandler;
 
 mod commands;
 mod errors;
+mod helpers;
 mod schema;
 mod services;
 mod settings;
@@ -41,6 +40,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         .commands_executor
         .register(set_paying_status::SET_PAYING_STATUS);
     handler.commands_executor.register(weather::WEATHER);
+    handler
+        .commands_executor
+        .register(set_my_location::SET_MY_LOCATION);
     handler.send_my_commands();
 
     let mut update_params = GetUpdatesParams::new();

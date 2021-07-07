@@ -5,5 +5,7 @@ table! {
         id -> Int4,
         telegram_uid -> Int8,
         is_paying -> Bool,
+        latitude -> Nullable<Float8>,
+        longitude -> Nullable<Float8>,
     }
 }

@@ -85,10 +85,17 @@ impl<'a> UpdateHandler<'a> {
         &self,
         _update: &Update,
         message: &Message,
-        location: &Location,
+        Location {
+            latitude,
+            longitude,
+            ..
+        }: &Location,
     ) -> Result<(), HandleUpdateError> {
         let weather_data = get_weather(
-            Identifier::Location(location.latitude, location.longitude),
+            Identifier::Location {
+                latitude: *latitude,
+                longitude: *longitude,
+            },
             self.settings,
         )?;
 

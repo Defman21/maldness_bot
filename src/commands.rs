@@ -5,6 +5,7 @@ use frankenstein::{Api, BotCommand, Update};
 use std::collections::HashMap;
 
 pub mod donate;
+pub mod set_my_location;
 pub mod set_paying_status;
 pub mod up;
 pub mod weather;
