@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use frankenstein::{Api, Update, Message};
+use frankenstein::{Api, Message, Update};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -22,8 +22,7 @@ fn handler(
     message: &Message,
     _args: &str,
 ) -> CommandResult<HandleUpdateError> {
-    let location =
-        message
+    let location = message
         .reply_to_message
         .as_ref()
         .ok_or_else(|| HandleUpdateError::Command("reply to message is empty".into()))?

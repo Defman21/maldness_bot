@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use frankenstein::{Api, ChatId, Location, SendMessageParams, TelegramApi, Update, Message};
+use frankenstein::{Api, ChatId, Location, Message, SendMessageParams, TelegramApi, Update};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -80,8 +80,10 @@ fn handler(
     }
 
     if let Some(data) = result {
-        let mut send_message_params =
-            SendMessageParams::new(ChatId::Integer(message.chat.id), format_weather_data(&data, &settings));
+        let mut send_message_params = SendMessageParams::new(
+            ChatId::Integer(message.chat.id),
+            format_weather_data(&data, &settings),
+        );
         send_message_params.set_reply_to_message_id(Some(message.message_id));
 
         return api

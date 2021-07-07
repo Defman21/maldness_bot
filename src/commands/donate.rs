@@ -1,5 +1,5 @@
 use diesel::PgConnection;
-use frankenstein::{Api, ChatId, SendMessageParams, TelegramApi, Update, Message};
+use frankenstein::{Api, ChatId, Message, SendMessageParams, TelegramApi, Update};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;

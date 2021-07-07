@@ -1,7 +1,7 @@
 use std::str::ParseBoolError;
 
 use diesel::PgConnection;
-use frankenstein::{Api, Update, Message};
+use frankenstein::{Api, Message, Update};
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;

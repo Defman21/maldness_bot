@@ -151,8 +151,13 @@ pub fn format_weather_data(data: &WeatherResponse, settings: &Settings) -> Strin
         name: data.name.clone(),
         temp: format!("{:+.1}", data.main.temp),
         feels_like: format!("{:+.1}", data.main.feels_like),
-        description
-    }).expect("Failed to serialize WeatherGlobals to liquid::Object");
+        description,
+    })
+    .expect("Failed to serialize WeatherGlobals to liquid::Object");
 
-    settings.open_weather.message_format().render(&globals).expect("Failed to render a template")
+    settings
+        .open_weather
+        .message_format()
+        .render(&globals)
+        .expect("Failed to render a template")
 }
