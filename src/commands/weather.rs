@@ -1,5 +1,5 @@
+use diesel::PgConnection;
 use frankenstein::{Api, ChatId, SendMessageParams, TelegramApi, Update};
-use postgres::Client;
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -16,7 +16,7 @@ pub const WEATHER: Command = Command {
 fn handler(
     api: &Api,
     update: &Update,
-    _postgres: &mut Client,
+    _postgres: &mut PgConnection,
     settings: &Settings,
     args: &str,
 ) -> CommandResult<HandleUpdateError> {

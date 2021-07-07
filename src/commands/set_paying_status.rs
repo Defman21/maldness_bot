@@ -1,8 +1,8 @@
 use std::convert::TryFrom;
 use std::str::ParseBoolError;
 
+use diesel::PgConnection;
 use frankenstein::{Api, Update};
-use postgres::Client;
 
 use crate::commands::{Command, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -19,7 +19,7 @@ pub const SET_PAYING_STATUS: Command = Command {
 fn handler(
     _api: &Api,
     update: &Update,
-    postgres: &mut Client,
+    postgres: &mut PgConnection,
     _settings: &Settings,
     args: &str,
 ) -> CommandResult<HandleUpdateError> {

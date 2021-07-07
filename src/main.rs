@@ -12,6 +12,7 @@ use crate::settings::Settings;
 
 mod commands;
 mod errors;
+mod schema;
 mod services;
 mod settings;
 mod updates;

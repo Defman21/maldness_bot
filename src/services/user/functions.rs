@@ -1,48 +1,81 @@
 use crate::services::user::errors::ServiceError;
-use postgres::Client;
+use diesel::prelude::*;
+use diesel::result::Error;
 
+#[derive(Queryable)]
 pub struct User {
     id: i32,
     telegram_uid: i64,
     is_paying: bool,
 }
 
-pub fn get_by_id(client: &mut Client, telegram_uid: i64) -> Result<User, ServiceError> {
-    let row = client
-        .query_one(
-            "SELECT id, telegram_uid, is_paying FROM users WHERE telegram_uid = $1",
-            &[&telegram_uid],
-        )
-        .or(Err(ServiceError::NotFound(None)))?;
+#[derive(Insertable)]
+#[table_name = "crate::schema::users"]
+struct InsertableUser {
+    telegram_uid: i64,
+    is_paying: bool,
+}
 
-    Ok(User {
-        id: row.get(0),
-        telegram_uid: row.get(1),
-        is_paying: row.get(2),
-    })
+pub type Result<T> = std::result::Result<T, ServiceError>;
+
+pub fn get_by_id(client: &mut PgConnection, telegram_uid: i64) -> Result<User> {
+    use crate::schema::users::dsl::{telegram_uid as tg_uid, users};
+
+    match users
+        .filter(tg_uid.eq(telegram_uid))
+        .get_result::<User>(client)
+    {
+        Ok(user) => Ok(user),
+        Err(err) => match err {
+            Error::NotFound => Err(ServiceError::NotFound),
+            _ => Err(ServiceError::Default(err.to_string())),
+        },
+    }
+}
+
+pub fn create(client: &mut PgConnection, telegram_uid: i64, is_paying: bool) -> Result<User> {
+    use crate::schema::users::dsl::{id, users};
+
+    match diesel::insert_into(users)
+        .values(InsertableUser {
+            telegram_uid,
+            is_paying,
+        })
+        .returning(id)
+        .get_result(client)
+    {
+        Ok(user_id) => Ok(User {
+            id: user_id,
+            telegram_uid,
+            is_paying,
+        }),
+        Err(e) => Err(ServiceError::Default(e.to_string())),
+    }
 }
 
 pub fn set_paying_status(
-    client: &mut Client,
+    client: &mut PgConnection,
     telegram_uid: i64,
     is_paying: bool,
-) -> Result<User, ServiceError> {
+) -> Result<User> {
     let result = get_by_id(client, telegram_uid);
     match result {
-        Ok(user) => {
-            let local_user = User {
-                id: user.id,
-                telegram_uid: user.telegram_uid,
-                is_paying,
+        Ok(_) => {
+            use crate::schema::users::dsl::{
+                is_paying as is_paying_db, telegram_uid as tg_uid, users,
             };
 
-            client.execute(
-                "UPDATE users SET is_paying = $1 WHERE telegram_uid = $2",
-                &[&is_paying, &telegram_uid],
-            )?;
-
-            Ok(local_user)
+            match diesel::update(users.filter(tg_uid.eq(telegram_uid)))
+                .set(is_paying_db.eq(is_paying))
+                .get_result::<User>(client)
+            {
+                Ok(user) => Ok(user),
+                Err(e) => Err(ServiceError::Default(e.to_string())),
+            }
         }
-        Err(e) => Err(e),
+        Err(e) => match e {
+            ServiceError::NotFound => create(client, telegram_uid, is_paying),
+            _ => Err(e),
+        },
     }
 }

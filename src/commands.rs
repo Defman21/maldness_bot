@@ -1,7 +1,7 @@
 use crate::errors::HandleUpdateError;
 use crate::settings::Settings;
+use diesel::PgConnection;
 use frankenstein::{Api, BotCommand, Update};
-use postgres::Client;
 use std::collections::HashMap;
 
 pub mod donate;
@@ -10,7 +10,8 @@ pub mod up;
 pub mod weather;
 
 pub type CommandResult<T> = Result<(), T>;
-type Handler = fn(&Api, &Update, &mut Client, &Settings, &str) -> CommandResult<HandleUpdateError>;
+type Handler =
+    fn(&Api, &Update, &mut PgConnection, &Settings, &str) -> CommandResult<HandleUpdateError>;
 
 pub struct Command {
     pub name: &'static str,
@@ -64,7 +65,7 @@ impl<'a> CommandsExecutor<'a> {
     pub fn execute(
         &self,
         bot_prefix: &str,
-        postgres: &mut Client,
+        postgres: &mut PgConnection,
         update: &Update,
         command_entity: &str,
         args: &str,

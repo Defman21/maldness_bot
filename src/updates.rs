@@ -1,8 +1,9 @@
+use diesel::prelude::*;
+use diesel::PgConnection;
 use frankenstein::{
     Api, ChatId, Location, Message, MessageEntity, SendMessageParams, SetMyCommandsParams,
     TelegramApi, Update,
 };
-use postgres::{Client, NoTls};
 
 use crate::commands::CommandsExecutor;
 use crate::errors::HandleUpdateError;
@@ -16,7 +17,7 @@ pub struct UpdateHandler<'a> {
     settings: &'a Settings,
     pub commands_executor: CommandsExecutor<'a>,
     bot_prefix: String,
-    postgres: Client,
+    postgres: PgConnection,
 }
 
 impl<'a> UpdateHandler<'a> {
@@ -26,7 +27,7 @@ impl<'a> UpdateHandler<'a> {
             settings,
             commands_executor: CommandsExecutor::new(settings, api),
             bot_prefix: String::new(),
-            postgres: Client::connect(settings.postgres_dsn.as_str(), NoTls)
+            postgres: PgConnection::establish(settings.postgres_dsn.as_str())
                 .expect("Failed to connect to postgres"),
         };
 
@@ -81,7 +82,7 @@ impl<'a> UpdateHandler<'a> {
     }
 
     fn handle_location(
-        &mut self,
+        &self,
         _update: &Update,
         message: &Message,
         location: &Location,
