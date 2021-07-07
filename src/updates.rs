@@ -103,7 +103,7 @@ impl<'a> UpdateHandler<'a> {
 
         let mut message_params = SendMessageParams::new(
             ChatId::Integer(message.chat.id),
-            format_weather_data(&weather_data),
+            format_weather_data(&weather_data, &self.settings),
         );
         message_params.set_reply_to_message_id(Some(message.message_id));
 

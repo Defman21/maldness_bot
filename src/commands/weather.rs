@@ -81,7 +81,7 @@ fn handler(
 
     if let Some(data) = result {
         let mut send_message_params =
-            SendMessageParams::new(ChatId::Integer(message.chat.id), format_weather_data(&data));
+            SendMessageParams::new(ChatId::Integer(message.chat.id), format_weather_data(&data, &settings));
         send_message_params.set_reply_to_message_id(Some(message.message_id));
 
         return api

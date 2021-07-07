@@ -1,5 +1,5 @@
 use crate::settings::Settings;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{fmt, io};
 use ureq::Error;
 
@@ -54,6 +54,14 @@ impl From<io::Error> for WeatherError {
 pub enum Identifier {
     Location { latitude: f64, longitude: f64 },
     Name(String),
+}
+
+#[derive(Serialize)]
+struct WeatherGlobals {
+    name: String,
+    temp: String,
+    feels_like: String,
+    description: String,
 }
 
 pub fn get_weather(
@@ -121,13 +129,11 @@ fn get_icon<'a>(id: i64) -> Option<&'a str> {
     None
 }
 
-pub fn format_weather_data(data: &WeatherResponse) -> String {
-    let mut text = format!(
-        "{}: {:+.1} (ощущается как {:+.1})",
-        data.name, data.main.temp, data.main.feels_like
-    );
+pub fn format_weather_data(data: &WeatherResponse, settings: &Settings) -> String {
+    let mut description = String::new();
+
     if !data.weather.is_empty() {
-        let description: String = data
+        description = data
             .weather
             .iter()
             .map(|i| {
@@ -139,9 +145,14 @@ pub fn format_weather_data(data: &WeatherResponse) -> String {
             })
             .collect::<Vec<String>>()
             .join(", ");
-        text += ", ";
-        text += description.as_str();
     };
 
-    text
+    let globals = liquid::to_object(&WeatherGlobals {
+        name: data.name.clone(),
+        temp: format!("{:+.1}", data.main.temp),
+        feels_like: format!("{:+.1}", data.main.feels_like),
+        description
+    }).expect("Failed to serialize WeatherGlobals to liquid::Object");
+
+    settings.open_weather.message_format().render(&globals).expect("Failed to render a template")
 }
