@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use config::{Config, ConfigError, Value};
+use crate::commands::donate;
+use config::{Config, ConfigError};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -28,15 +29,19 @@ impl OpenWeatherSettings {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct CommandsMap {
+    pub donate: donate::CommandSettings,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Settings {
     pub token: String,
     pub postgres_dsn: String,
     pub admins: Vec<u64>,
-    // TODO: should not be public, we can't take the value out of the command hashmap thus leading
-    // to clone calls every time when accessing e.g. commands["donate"]["some_option"]
-    pub commands: HashMap<String, HashMap<String, Value>>,
+    pub commands: CommandsMap,
     pub open_weather: OpenWeatherSettings,
     allowed_chats: Option<Vec<i64>>,
+    #[serde(skip)]
     _allowed_chats_hashmap: Option<HashMap<i64, ()>>,
 }
 
