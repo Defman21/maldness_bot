@@ -24,6 +24,7 @@ pub const WEATHER: Command = Command {
 #[derive(Debug, Deserialize)]
 pub struct CommandSettings {
     not_found_text: Option<String>,
+    no_location_text: Option<String>,
 }
 
 fn handler(
@@ -58,9 +59,11 @@ fn handler(
     let send_error_message = || {
         let send_message_params = SendMessageParams::new(
             ChatId::Integer(message.chat.id),
-            "You've called the command without any arguments or a reply to a location and \
-            you don't have a personal location set! Consider using /set_my_location in reply to a \
-            location message to set your location so you could call the command without any arguments".into(),
+            settings.commands.weather.no_location_text.clone().unwrap_or_else(|| {
+                "You've called the command without any arguments or a reply to a location and \
+                you don't have a personal location set! Consider using /set_my_location in reply to a \
+                location message to set your location so you could call the command without any arguments".into()
+            })
         );
         if let Some(err) = api.send_message(&send_message_params).err() {
             return HandleUpdateError::Api(err);
