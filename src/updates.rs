@@ -1,5 +1,7 @@
+use diesel::pg::Pg;
 use diesel::prelude::*;
 use diesel::PgConnection;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use frankenstein::{
     Api, ChatId, Location, Message, MessageEntity, SendMessageParams, SetMyCommandsParams,
     TelegramApi, Update,
@@ -9,6 +11,8 @@ use crate::commands::CommandsExecutor;
 use crate::errors::HandleUpdateError;
 use crate::services::weather::{format_weather_data, get_weather, Identifier};
 use crate::settings::Settings;
+use std::error::Error;
+use std::process::exit;
 
 const BOT_COMMAND: &str = "bot_command";
 const CHAT_TYPE_PRIVATE: &str = "private";
@@ -21,6 +25,16 @@ pub struct UpdateHandler<'a> {
     postgres: PgConnection,
 }
 
+const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
+
+fn run_migrations(
+    conn: &mut impl MigrationHarness<Pg>,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    conn.run_pending_migrations(MIGRATIONS)?;
+
+    Ok(())
+}
+
 impl<'a> UpdateHandler<'a> {
     pub fn new(api: &'a Api, settings: &'a Settings) -> UpdateHandler<'a> {
         let mut handler = UpdateHandler {
@@ -30,6 +44,11 @@ impl<'a> UpdateHandler<'a> {
             bot_prefix: String::new(),
             postgres: PgConnection::establish(settings.postgres_dsn.as_str())
                 .expect("Failed to connect to postgres"),
+        };
+
+        if let Err(err) = run_migrations(&mut handler.postgres) {
+            println!("Failed to run the migrations: {}", err);
+            exit(1);
         };
 
         match api.get_me() {

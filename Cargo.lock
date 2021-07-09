@@ -177,7 +177,7 @@ dependencies = [
 [[package]]
 name = "diesel"
 version = "2.0.0"
-source = "git+https://github.com/diesel-rs/diesel#72bfb356b8038e993634f095b57e54fdf1cfd8f9"
+source = "git+https://github.com/diesel-rs/diesel#83ffef7b49d026480850f775fc8d0e53514e4987"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -189,11 +189,21 @@ dependencies = [
 [[package]]
 name = "diesel_derives"
 version = "2.0.0"
-source = "git+https://github.com/diesel-rs/diesel#72bfb356b8038e993634f095b57e54fdf1cfd8f9"
+source = "git+https://github.com/diesel-rs/diesel#83ffef7b49d026480850f775fc8d0e53514e4987"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "diesel_migrations"
+version = "2.0.0"
+source = "git+https://github.com/diesel-rs/diesel#83ffef7b49d026480850f775fc8d0e53514e4987"
+dependencies = [
+ "diesel",
+ "migrations_internals",
+ "migrations_macros",
 ]
 
 [[package]]
@@ -235,9 +245,9 @@ dependencies = [
 
 [[package]]
 name = "frankenstein"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b8b49bebcd55ef13bbf271258f2757a450e0881111e8513c50ea4c7e0c1cbc7"
+checksum = "103fc41dbc5430c87cd58faa0570fda5d98eb4e18d09359babfa1fefbcd81443"
 dependencies = [
  "mime_guess 2.0.3",
  "multipart",
@@ -280,9 +290,9 @@ checksum = "32619942b8be646939eaf3db0602b39f5229b74575b67efc897811ded1db4e57"
 
 [[package]]
 name = "hermit-abi"
-version = "0.1.18"
+version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "322f4de77956e22ed0e5032c359a0f1273f1f7f0d79bfa3b8ffbc730d7fbcc5c"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
 dependencies = [
  "libc",
 ]
@@ -376,9 +386,9 @@ dependencies = [
 
 [[package]]
 name = "kstring"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e6e2788db87946212341790c649c52c6211601b9c8a99a95753fb1ac9eb261c"
+checksum = "a976df3d6d3893d63e35cf9c906bfd07dc7d7d98415216ba1fe47c7abee4b240"
 dependencies = [
  "serde 1.0.126",
 ]
@@ -410,9 +420,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.97"
+version = "0.2.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12b8adadd720df158f4d70dfe7ccc6adb0472d7c55ca83445f6a5ab3e36f8fb6"
+checksum = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790"
 
 [[package]]
 name = "linked-hash-map"
@@ -502,6 +512,7 @@ version = "0.1.0"
 dependencies = [
  "config",
  "diesel",
+ "diesel_migrations",
  "frankenstein",
  "liquid",
  "serde 1.0.126",
@@ -526,6 +537,25 @@ name = "memchr"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b16bd47d9e329435e309c58469fe0791c2d0d1ba96ec0954152a5ae2b04387dc"
+
+[[package]]
+name = "migrations_internals"
+version = "2.0.0"
+source = "git+https://github.com/diesel-rs/diesel#83ffef7b49d026480850f775fc8d0e53514e4987"
+dependencies = [
+ "serde 1.0.126",
+ "toml",
+]
+
+[[package]]
+name = "migrations_macros"
+version = "2.0.0"
+source = "git+https://github.com/diesel-rs/diesel#83ffef7b49d026480850f775fc8d0e53514e4987"
+dependencies = [
+ "migrations_internals",
+ "proc-macro2",
+ "quote",
+]
 
 [[package]]
 name = "mime"
