@@ -11,6 +11,7 @@ pub const DONATE: Command = Command {
     description: "Support the creator",
     is_admin_only: false,
     handler,
+    action_type: None,
 };
 
 #[derive(Debug, Deserialize)]

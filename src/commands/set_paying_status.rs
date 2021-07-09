@@ -14,6 +14,7 @@ pub const SET_PAYING_STATUS: Command = Command {
     description: "Set the paying status for a user",
     is_admin_only: true,
     handler,
+    action_type: None,
 };
 
 fn handler(
