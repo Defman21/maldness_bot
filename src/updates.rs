@@ -87,8 +87,13 @@ impl<'a> UpdateHandler<'a> {
     ) -> Result<(), HandleUpdateError> {
         let text = message.text.as_ref().unwrap();
         let offset = command_entity.offset as usize;
+
+        if offset != 0 {
+            return Ok(());
+        }
+
         let length = command_entity.length as usize;
-        let command = &text[offset..length];
+        let command = &text[offset..offset + length];
 
         match self.commands_executor.execute(
             self.bot_prefix.as_str(),
