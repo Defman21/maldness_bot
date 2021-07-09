@@ -1,7 +1,7 @@
 use crate::errors::HandleUpdateError;
 use crate::settings::Settings;
 use diesel::PgConnection;
-use frankenstein::{Api, BotCommand, Message, Update};
+use frankenstein::{Api, BotCommand, ChatId, Message, SendChatActionParams, TelegramApi, Update};
 use std::collections::HashMap;
 
 pub mod donate;
@@ -100,6 +100,10 @@ impl<'a> CommandsExecutor<'a> {
         println!("Command name: {:?}", command_name);
 
         if let Some(command) = self.commands.get(command_name) {
+            let _ = self.tg_api.send_chat_action(&SendChatActionParams::new(
+                ChatId::Integer(message.chat.id),
+                "typing".into(),
+            ));
             if command.is_admin_only && !self.is_admin(update.message.as_ref()?.from.as_ref()?.id) {
                 return None;
             }
