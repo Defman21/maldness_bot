@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use crate::commands::donate;
+use crate::commands::{donate, weather};
 use config::{Config, ConfigError};
 use serde::Deserialize;
 
@@ -31,6 +31,7 @@ impl OpenWeatherSettings {
 #[derive(Debug, Deserialize)]
 pub struct CommandsMap {
     pub donate: donate::CommandSettings,
+    pub weather: weather::CommandSettings,
 }
 
 #[derive(Debug, Deserialize)]
