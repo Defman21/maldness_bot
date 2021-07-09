@@ -51,9 +51,7 @@ impl Settings {
         s.merge(config::File::with_name("config"))?
             .merge(config::Environment::with_prefix("bot"))?;
 
-        let mut s = s
-            .try_into::<Self>()
-            .map_err(|e| ConfigError::Message(e.to_string()))?;
+        let mut s: Self = s.try_into()?;
 
         if s.open_weather.message_format.is_none() {
             s.open_weather.message_format = Some(

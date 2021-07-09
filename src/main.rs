@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::process::exit;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -30,7 +31,10 @@ fn handle_updates(updates: Vec<Update>, executor: &mut UpdateHandler) -> Option<
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let settings = Settings::new()?;
+    let settings = Settings::new().unwrap_or_else(|err| {
+        println!("Couldn't parse the config! {}", err);
+        exit(1);
+    });
     let api = Api::new(settings.token.as_str());
 
     let mut handler = UpdateHandler::new(&api, &settings);
