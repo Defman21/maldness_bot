@@ -134,7 +134,7 @@ fn handler(
                             .weather
                             .not_found_text
                             .clone()
-                            .unwrap_or_else(|| "City not found".into()),
+                            .unwrap_or_else(|| "No weather data for this location found".into()),
                     );
                     send_message_params.set_reply_to_message_id(Some(message.message_id));
 
