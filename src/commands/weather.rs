@@ -13,14 +13,13 @@ use crate::services::weather::{
     format_weather_data, get_weather, Identifier, WeatherError, WeatherResponse,
 };
 use crate::settings::Settings;
-use crate::helpers::ActionType;
 
 pub const WEATHER: Command = Command {
     name: "weather",
     description: "Check the weather at a given location",
     is_admin_only: false,
     handler,
-    action_type: Some(ActionType::FindLocation),
+    chat_action: Some(ChatAction::FindLocation),
 };
 
 #[derive(Debug, Deserialize)]

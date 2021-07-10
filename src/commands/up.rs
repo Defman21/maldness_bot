@@ -10,7 +10,7 @@ pub const UP: Command = Command {
     description: "Check bot status",
     is_admin_only: false,
     handler,
-    action_type: None,
+    chat_action: None,
 };
 
 fn handler(

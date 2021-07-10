@@ -12,7 +12,7 @@ pub const SET_MY_LOCATION: Command = Command {
     description: "Set the location as my location",
     is_admin_only: false,
     handler,
-    action_type: None,
+    chat_action: None,
 };
 
 fn handler(

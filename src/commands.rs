@@ -1,9 +1,10 @@
 use crate::errors::HandleUpdateError;
 use crate::settings::Settings;
 use diesel::PgConnection;
-use frankenstein::{Api, BotCommand, ChatId, Message, SendChatActionParams, TelegramApi, Update};
+use frankenstein::{
+    Api, BotCommand, ChatAction, ChatId, Message, SendChatActionParams, TelegramApi, Update,
+};
 use std::collections::HashMap;
-use crate::helpers::ActionType;
 
 pub mod donate;
 pub mod set_my_location;
@@ -26,7 +27,7 @@ pub struct Command {
     pub description: &'static str,
     pub handler: Handler,
     pub is_admin_only: bool,
-    pub action_type: Option<ActionType>,
+    pub chat_action: Option<ChatAction>,
 }
 
 pub struct CommandsExecutor<'a> {
@@ -102,10 +103,10 @@ impl<'a> CommandsExecutor<'a> {
         println!("Command name: {:?}", command_name);
 
         if let Some(command) = self.commands.get(command_name) {
-            if let Some(action_type) = command.action_type.as_ref() {
+            if let Some(chat_action) = command.chat_action.as_ref() {
                 let _ = self.tg_api.send_chat_action(&SendChatActionParams::new(
                     ChatId::Integer(message.chat.id),
-                    action_type.into(),
+                    chat_action.clone(),
                 ));
             }
             if command.is_admin_only && !self.is_admin(update.message.as_ref()?.from.as_ref()?.id) {
