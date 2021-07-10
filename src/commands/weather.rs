@@ -1,5 +1,7 @@
 use diesel::PgConnection;
-use frankenstein::{Api, ChatId, Location, Message, SendMessageParams, TelegramApi, Update};
+use frankenstein::{
+    Api, ChatAction, ChatId, Message, SendMessageParams, TelegramApi, Update,
+};
 use serde::Deserialize;
 use ureq::Error as RequestError;
 
@@ -26,6 +28,7 @@ pub const WEATHER: Command = Command {
 pub struct CommandSettings {
     not_found_text: Option<String>,
     no_location_text: Option<String>,
+    no_location_for_user_text: Option<String>,
 }
 
 fn handler(
@@ -36,35 +39,28 @@ fn handler(
     message: &Message,
     args: &str,
 ) -> CommandResult<HandleUpdateError> {
-    let mut result: Option<Result<WeatherResponse, WeatherError>> = None;
+    let result: Result<WeatherResponse, WeatherError>;
 
-    if let Some(reply) = message.reply_to_message.as_ref() {
-        if let Some(Location {
-            latitude,
-            longitude,
-            ..
-        }) = reply.location
-        {
-            result = Some(get_weather(
-                Identifier::Location {
-                    latitude,
-                    longitude,
-                },
-                settings,
-            ));
-        }
-    }
+    let from_id = helpers::get_user_id(message)?;
 
-    let user_id = helpers::get_user_id(message)?;
+    let send_error_message = |user_id: i64| {
+        let text = match user_id == from_id {
+            true => {
+                settings.commands.weather.no_location_text.clone().unwrap_or_else(|| {
+                    "You don't have a location set. Send me a geolocation message \
+                    and call /set_my_location on it.".into()
+                })
+            }
+            false => {
+                settings.commands.weather.no_location_for_user_text.clone().unwrap_or_else(|| {
+                    "This user does not have a location set.".into()
+                })
+            }
+        };
 
-    let send_error_message = || {
         let send_message_params = SendMessageParams::new(
             ChatId::Integer(message.chat.id),
-            settings.commands.weather.no_location_text.clone().unwrap_or_else(|| {
-                "You've called the command without any arguments or a reply to a location and \
-                you don't have a personal location set! Consider using /set_my_location in reply to a \
-                location message to set your location so you could call the command without any arguments".into()
-            })
+            text,
         );
         if let Some(err) = api.send_message(&send_message_params).err() {
             return HandleUpdateError::Api(err);
@@ -73,29 +69,49 @@ fn handler(
         HandleUpdateError::Command("handled return".into())
     };
 
-    if !args.is_empty() {
-        result = Some(get_weather(Identifier::Name(args.to_string()), settings));
-    } else if result.is_none() {
+    let mut get_location_by_user = |user_id: i64| -> Result<Result<WeatherResponse, WeatherError>, HandleUpdateError>{
         let User {
             latitude,
             longitude,
             ..
-        } = user::functions::get_by_id(postgres, user_id).map_err(|e| match e {
-            ServiceError::NotFound => send_error_message(),
-            _ => HandleUpdateError::Command(e.to_string()),
+        } = user::functions::get_by_id(postgres, user_id).map_err(|err| {
+            match err {
+                ServiceError::NotFound => send_error_message(user_id),
+                err => HandleUpdateError::Command(err.to_string()),
+            }
         })?;
-        let latitude = latitude.ok_or_else(send_error_message)?;
-        let longitude = longitude.ok_or_else(send_error_message)?;
-        result = Some(get_weather(
+        let latitude = latitude.ok_or_else(|| send_error_message(user_id))?;
+        let longitude = longitude.ok_or_else(|| send_error_message(user_id))?;
+
+        Ok(get_weather(
             Identifier::Location {
                 latitude,
                 longitude,
             },
             settings,
-        ));
+        ))
+    };
+
+    if !args.is_empty() {
+        result = get_weather(Identifier::Name(args.to_string()), settings);
+    } else if let Some(reply) = message.reply_to_message.as_ref() {
+        if let Some(location) = reply.location.as_ref() {
+            result = get_weather(
+                Identifier::Location {
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                },
+                settings,
+            );
+        } else {
+            let user_id = helpers::get_user_id(reply)?;
+            result = get_location_by_user(user_id)?;
+        }
+    } else {
+        result = get_location_by_user(from_id)?;
     }
 
-    match result.unwrap() {
+    match result {
         Ok(ref data) => {
             let mut send_message_params = SendMessageParams::new(
                 ChatId::Integer(message.chat.id),
