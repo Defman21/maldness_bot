@@ -1,5 +1,8 @@
 use crate::services::sleep::errors::ServiceError;
-use crate::services::user::{functions::{User, get_by_telegram_uid, create as create_user}, errors::ServiceError as UserServiceError};
+use crate::services::user::{
+    errors::ServiceError as UserServiceError,
+    functions::{create as create_user, get_by_telegram_uid, User},
+};
 
 use chrono::prelude::*;
 use diesel::prelude::*;

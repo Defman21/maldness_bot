@@ -15,12 +15,12 @@ use crate::cache::Cache;
 use crate::commands::CommandsExecutor;
 use crate::errors::HandleUpdateError;
 use crate::helpers;
+use crate::services::sleep::functions::end_sleep;
 use crate::services::sleep::{
     errors::ServiceError, format_sleep_data, functions::get_sleeping_users,
 };
 use crate::services::weather::{format_weather_data, get_weather, Identifier};
 use crate::settings::Settings;
-use crate::services::sleep::functions::end_sleep;
 
 const BOT_COMMAND: &str = "bot_command";
 const CHAT_TYPE_PRIVATE: &str = "private";

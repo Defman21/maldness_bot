@@ -5,7 +5,7 @@ use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
 
 use crate::helpers;
-use crate::services::sleep::functions::{SleepType, go_to_sleep};
+use crate::services::sleep::functions::{go_to_sleep, SleepType};
 
 pub const GOOD_NIGHT: Command = Command {
     name: "gn",
@@ -38,14 +38,9 @@ fn handler(
     };
     let afk_message = match args.is_empty() {
         true => None,
-        false => Some(args.to_string())
+        false => Some(args.to_string()),
     };
-    go_to_sleep(
-        user_id,
-        sleep_type,
-        afk_message,
-        conn,
-    )?;
+    go_to_sleep(user_id, sleep_type, afk_message, conn)?;
     cache.cache_sleep_status(user_id, true);
     let mut send_message_params = SendMessageParams::new(
         ChatId::Integer(message.chat.id),
