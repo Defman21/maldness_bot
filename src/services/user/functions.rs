@@ -2,9 +2,10 @@ use crate::services::user::errors::ServiceError;
 use diesel::prelude::*;
 use diesel::result::Error;
 
-#[derive(Queryable)]
+#[derive(Identifiable, Queryable)]
+#[table_name = "crate::schema::users"]
 pub struct User {
-    id: i32,
+    pub id: i32,
     telegram_uid: i64,
     is_paying: bool,
     pub latitude: Option<f64>,
@@ -22,12 +23,12 @@ struct InsertableUser {
 
 pub type Result<T> = std::result::Result<T, ServiceError>;
 
-pub fn get_by_id(client: &mut PgConnection, telegram_uid: i64) -> Result<User> {
+pub fn get_by_telegram_uid(conn: &mut PgConnection, telegram_uid: i64) -> Result<User> {
     use crate::schema::users::dsl::{telegram_uid as tg_uid, users};
 
     match users
         .filter(tg_uid.eq(telegram_uid))
-        .get_result::<User>(client)
+        .get_result::<User>(conn)
     {
         Ok(user) => Ok(user),
         Err(err) => match err {
@@ -72,7 +73,7 @@ pub fn set_paying_status(
     telegram_uid: i64,
     is_paying: bool,
 ) -> Result<User> {
-    match get_by_id(client, telegram_uid) {
+    match get_by_telegram_uid(client, telegram_uid) {
         Ok(_) => {
             use crate::schema::users::dsl::{
                 is_paying as is_paying_db, telegram_uid as telegram_uid_db, users,
@@ -96,7 +97,7 @@ pub fn set_location(
     latitude: f64,
     longitude: f64,
 ) -> Result<User> {
-    match get_by_id(client, telegram_uid) {
+    match get_by_telegram_uid(client, telegram_uid) {
         Ok(_) => {
             use crate::schema::users::dsl::{
                 latitude as latitude_db, longitude as longitude_db,

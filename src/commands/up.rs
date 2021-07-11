@@ -1,9 +1,7 @@
-use diesel::PgConnection;
-use frankenstein::{Api, ChatId, Message, SendMessageParams, TelegramApi, Update};
+use frankenstein::{ChatId, SendMessageParams, TelegramApi};
 
-use crate::commands::{Command, CommandResult};
+use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
-use crate::settings::Settings;
 
 pub const UP: Command = Command {
     name: "up",
@@ -14,12 +12,9 @@ pub const UP: Command = Command {
 };
 
 fn handler(
-    api: &Api,
-    _update: &Update,
-    _postgres: &mut PgConnection,
-    _settings: &Settings,
-    message: &Message,
-    args: &str,
+    CommandParams {
+        api, message, args, ..
+    }: CommandParams,
 ) -> CommandResult<HandleUpdateError> {
     let mut send_message_params = SendMessageParams::new(
         ChatId::Integer(message.chat.id),

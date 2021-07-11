@@ -1,4 +1,5 @@
 use crate::errors::HandleUpdateError;
+use crate::services::user::errors::ServiceError as UserServiceError;
 use diesel::result::Error as DieselError;
 use std::error::Error;
 use std::fmt;
@@ -12,8 +13,8 @@ pub enum ServiceError {
 impl fmt::Display for ServiceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            ServiceError::Default(ref msg) => write!(f, "User service error: {}", msg),
-            ServiceError::NotFound => write!(f, "User not found"),
+            ServiceError::Default(ref msg) => write!(f, "Sleep events service error: {}", msg),
+            ServiceError::NotFound => write!(f, "Sleep event not found"),
         }
     }
 }
@@ -29,5 +30,11 @@ impl From<DieselError> for ServiceError {
 impl From<ServiceError> for HandleUpdateError {
     fn from(err: ServiceError) -> Self {
         Self::Command(err.to_string())
+    }
+}
+
+impl From<UserServiceError> for ServiceError {
+    fn from(err: UserServiceError) -> Self {
+        Self::Default(err.to_string())
     }
 }
