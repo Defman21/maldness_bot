@@ -1,5 +1,5 @@
 use crate::services::sleep::errors::ServiceError;
-use crate::services::user::functions::User;
+use crate::services::user::{functions::{User, get_by_telegram_uid, create as create_user}, errors::ServiceError as UserServiceError};
 
 use chrono::prelude::*;
 use diesel::prelude::*;
@@ -38,7 +38,11 @@ pub fn go_to_sleep(
     message: Option<String>,
     conn: &mut PgConnection,
 ) -> Result<SleepEvent> {
-    let user = crate::services::user::functions::get_by_telegram_uid(conn, user_id)?;
+    let user = match get_by_telegram_uid(conn, user_id) {
+        Ok(user) => user,
+        Err(UserServiceError::NotFound) => create_user(conn, user_id, None, None, None)?,
+        Err(err) => return Err(ServiceError::from(err)),
+    };
     match sleep_type {
         SleepType::Continue => match get_last_not_ended_event(&user, conn) {
             Ok(event) => {
