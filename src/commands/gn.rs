@@ -5,7 +5,7 @@ use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
 
 use crate::helpers;
-use crate::services::sleep::functions::SleepType;
+use crate::services::sleep::functions::{SleepType, go_to_sleep};
 
 pub const GOOD_NIGHT: Command = Command {
     name: "gn",
@@ -40,7 +40,7 @@ fn handler(
         true => None,
         false => Some(args.to_string())
     };
-    crate::services::sleep::functions::go_to_sleep(
+    go_to_sleep(
         user_id,
         sleep_type,
         afk_message,
