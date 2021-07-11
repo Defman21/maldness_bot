@@ -12,5 +12,5 @@ pub fn get_user_id(message: &Message) -> Result<i64, HandleUpdateError> {
             .ok_or_else(|| HandleUpdateError::Command("from in the message is empty".into()))?
             .id,
     )
-        .map_err(|e| HandleUpdateError::Command(e.to_string()))
+    .map_err(|e| HandleUpdateError::Command(e.to_string()))
 }

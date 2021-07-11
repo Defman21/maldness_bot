@@ -5,10 +5,12 @@ use std::time::Duration;
 
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
-use crate::commands::{donate, set_my_location, set_paying_status, up, weather};
+use crate::cache::Cache;
+use crate::commands::{donate, gn, set_my_location, set_paying_status, up, weather};
 use crate::settings::Settings;
 use crate::updates::UpdateHandler;
 
+mod cache;
 mod commands;
 mod errors;
 mod helpers;
@@ -36,8 +38,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         exit(1);
     });
     let api = Api::new(settings.token.as_str());
+    let cache = Cache::new();
 
-    let mut handler = UpdateHandler::new(&api, &settings);
+    let mut handler = UpdateHandler::new(&api, &settings, &cache);
     handler.commands_executor.register(up::UP);
     handler.commands_executor.register(donate::DONATE);
     handler
@@ -47,6 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     handler
         .commands_executor
         .register(set_my_location::SET_MY_LOCATION);
+    handler.commands_executor.register(gn::GOOD_NIGHT);
     handler.send_my_commands();
 
     let mut update_params = GetUpdatesParams::new();

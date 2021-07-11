@@ -1,10 +1,8 @@
-use diesel::PgConnection;
-use frankenstein::{Api, ChatId, Message, SendMessageParams, TelegramApi, Update};
+use frankenstein::{ChatId, SendMessageParams, TelegramApi};
 use serde::Deserialize;
 
-use crate::commands::{Command, CommandResult};
+use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
-use crate::settings::Settings;
 
 pub const DONATE: Command = Command {
     name: "donate",
@@ -20,12 +18,12 @@ pub struct CommandSettings {
 }
 
 fn handler(
-    api: &Api,
-    _update: &Update,
-    _postgres: &mut PgConnection,
-    settings: &Settings,
-    message: &Message,
-    _args: &str,
+    CommandParams {
+        api,
+        settings,
+        message,
+        ..
+    }: CommandParams,
 ) -> CommandResult<HandleUpdateError> {
     let text = settings.commands.donate.text.clone();
     let mut send_message_params = SendMessageParams::new(ChatId::Integer(message.chat.id), text);

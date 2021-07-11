@@ -133,6 +133,7 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits 0.2.14",
+ "serde 1.0.126",
  "time",
  "winapi",
 ]
@@ -181,6 +182,7 @@ source = "git+https://github.com/diesel-rs/diesel#83ffef7b49d026480850f775fc8d0e
 dependencies = [
  "bitflags",
  "byteorder",
+ "chrono",
  "diesel_derives",
  "itoa",
  "pq-sys",
@@ -302,6 +304,12 @@ name = "httparse"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3a87b616e37e93c22fb19bcd386f02f3af5ea98a25670ad0fce773de23c5e68"
+
+[[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
@@ -510,10 +518,12 @@ dependencies = [
 name = "maldness_bot"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "config",
  "diesel",
  "diesel_migrations",
  "frankenstein",
+ "humantime",
  "liquid",
  "serde 1.0.126",
  "serde_json",

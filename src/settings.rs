@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use crate::commands::{donate, weather};
+use crate::commands::{donate, gn, weather};
 use config::{Config, ConfigError};
 use serde::Deserialize;
 
@@ -31,19 +31,40 @@ impl OpenWeatherSettings {
 #[derive(Debug, Deserialize)]
 pub struct CommandsMap {
     pub donate: donate::CommandSettings,
+    pub gn: gn::CommandSettings,
     pub weather: weather::CommandSettings,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct Settings {
     pub token: String,
     pub postgres_dsn: String,
     pub admins: Vec<u64>,
     pub commands: CommandsMap,
     pub open_weather: OpenWeatherSettings,
+    wake_up_format: Option<String>,
+    #[serde(skip)]
+    _wake_up_format_tpl: Option<liquid::Template>,
     allowed_chats: Option<Vec<i64>>,
     #[serde(skip)]
     _allowed_chats_hashmap: Option<HashMap<i64, ()>>,
+}
+
+impl Debug for Settings {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<Settings token={} postgres_dsn={} admins={:?} commands={:?} open_weather={:?} \
+        wake_up_format={:?} allowed_chats={:?}>",
+            self.token,
+            self.postgres_dsn,
+            self.admins,
+            self.commands,
+            self.open_weather,
+            self.wake_up_format,
+            self.allowed_chats
+        )
+    }
 }
 
 impl Settings {
@@ -60,13 +81,30 @@ impl Settings {
             );
         }
 
+        if s.wake_up_format.is_none() {
+            s.wake_up_format = Some(
+                "{{ username }} finished their sleep: {{ message }}. They've slept for {{ duration }}".into()
+            );
+        }
+
         s.open_weather._message_format_tpl = Some(
             liquid::ParserBuilder::with_stdlib()
                 .build()
                 .map_err(|e| ConfigError::Message(e.to_string()))?
                 .parse(s.open_weather.message_format.as_ref().unwrap().as_str())
                 .map_err(|e| {
-                    println!("There's an error in your [open_weather].message_format string!");
+                    println!("There's an error in your [open_weather].message_format setting!");
+                    ConfigError::Message(e.to_string())
+                })?,
+        );
+
+        s._wake_up_format_tpl = Some(
+            liquid::ParserBuilder::with_stdlib()
+                .build()
+                .map_err(|e| ConfigError::Message(e.to_string()))?
+                .parse(s.wake_up_format.as_ref().unwrap().as_str())
+                .map_err(|e| {
+                    println!("There's an error in your wake_up_format setting!");
                     ConfigError::Message(e.to_string())
                 })?,
         );
@@ -85,5 +123,9 @@ impl Settings {
         } else {
             true
         }
+    }
+
+    pub fn wake_up_format(&self) -> &liquid::Template {
+        self._wake_up_format_tpl.as_ref().unwrap()
     }
 }

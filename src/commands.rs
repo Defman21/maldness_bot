@@ -1,3 +1,4 @@
+use crate::cache::Cache;
 use crate::errors::HandleUpdateError;
 use crate::settings::Settings;
 use diesel::PgConnection;
@@ -7,25 +8,30 @@ use frankenstein::{
 use std::collections::HashMap;
 
 pub mod donate;
+pub mod gn;
 pub mod set_my_location;
 pub mod set_paying_status;
 pub mod up;
 pub mod weather;
 
 pub type CommandResult<T> = Result<(), T>;
-type Handler = fn(
-    &Api,
-    &Update,
-    &mut PgConnection,
-    &Settings,
-    &Message,
-    &str,
-) -> CommandResult<HandleUpdateError>;
+pub struct CommandParams<'a> {
+    api: &'a Api,
+    conn: &'a mut PgConnection,
+    cache: &'a Cache,
+    settings: &'a Settings,
+    message: &'a Message,
+    args: &'a str,
+}
 
 pub struct Command {
     pub name: &'static str,
     pub description: &'static str,
-    pub handler: Handler,
+    // The lifetime of CommandParams is the lifetime of CommandsExecutor.execute (e.g. 'execute)
+    // We can't write it like type Handler<'execute> = fn(CommandParams<'execute>) -> ... because
+    // we don't know about the 'execute lifetime at that point.
+    // So instead we use higher-rank trait bounds: https://doc.rust-lang.org/nomicon/hrtb.html
+    pub handler: for<'a> fn(CommandParams<'a>) -> CommandResult<HandleUpdateError>,
     pub is_admin_only: bool,
     pub chat_action: Option<ChatAction>,
 }
@@ -34,14 +40,16 @@ pub struct CommandsExecutor<'a> {
     settings: &'a Settings,
     tg_api: &'a Api,
     commands: HashMap<String, Command>,
+    cache: &'a Cache,
 }
 
 impl<'a> CommandsExecutor<'a> {
-    pub fn new(settings: &'a Settings, tg_api: &'a Api) -> Self {
+    pub fn new(settings: &'a Settings, tg_api: &'a Api, cache: &'a Cache) -> Self {
         Self {
             settings,
             tg_api,
             commands: HashMap::new(),
+            cache,
         }
     }
 
@@ -75,7 +83,7 @@ impl<'a> CommandsExecutor<'a> {
     pub fn execute(
         &self,
         bot_prefix: &str,
-        postgres: &mut PgConnection,
+        conn: &mut PgConnection,
         update: &Update,
         command_entity: &str,
         message: &Message,
@@ -112,14 +120,14 @@ impl<'a> CommandsExecutor<'a> {
             if command.is_admin_only && !self.is_admin(update.message.as_ref()?.from.as_ref()?.id) {
                 return None;
             }
-            return match (command.handler)(
-                self.tg_api,
-                update,
-                postgres,
-                self.settings,
+            return match (command.handler)(CommandParams {
+                api: self.tg_api,
+                conn,
+                cache: self.cache,
+                settings: self.settings,
                 message,
                 args,
-            ) {
+            }) {
                 Ok(_) => None,
                 Err(e) => Some(e),
             };

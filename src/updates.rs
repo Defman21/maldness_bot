@@ -1,3 +1,7 @@
+use std::error::Error;
+use std::process::exit;
+use std::time::Duration;
+
 use diesel::pg::Pg;
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -7,12 +11,15 @@ use frankenstein::{
     TelegramApi, Update,
 };
 
+use crate::cache::Cache;
 use crate::commands::CommandsExecutor;
 use crate::errors::HandleUpdateError;
+use crate::helpers;
+use crate::services::sleep::{
+    errors::ServiceError, format_sleep_data, functions::get_sleeping_users,
+};
 use crate::services::weather::{format_weather_data, get_weather, Identifier};
 use crate::settings::Settings;
-use std::error::Error;
-use std::process::exit;
 
 const BOT_COMMAND: &str = "bot_command";
 const CHAT_TYPE_PRIVATE: &str = "private";
@@ -23,6 +30,7 @@ pub struct UpdateHandler<'a> {
     pub commands_executor: CommandsExecutor<'a>,
     bot_prefix: String,
     postgres: PgConnection,
+    cache: &'a Cache,
 }
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
@@ -36,14 +44,15 @@ fn run_migrations(
 }
 
 impl<'a> UpdateHandler<'a> {
-    pub fn new(api: &'a Api, settings: &'a Settings) -> UpdateHandler<'a> {
+    pub fn new(api: &'a Api, settings: &'a Settings, cache: &'a Cache) -> UpdateHandler<'a> {
         let mut handler = UpdateHandler {
             api,
             settings,
-            commands_executor: CommandsExecutor::new(settings, api),
+            commands_executor: CommandsExecutor::new(settings, api, cache),
             bot_prefix: String::new(),
             postgres: PgConnection::establish(settings.postgres_dsn.as_str())
                 .expect("Failed to connect to postgres"),
+            cache,
         };
 
         if let Err(err) = run_migrations(&mut handler.postgres) {
@@ -63,6 +72,11 @@ impl<'a> UpdateHandler<'a> {
                 panic!("Failed to get myself: {:?}", error);
             }
         };
+
+        match get_sleeping_users(&mut handler.postgres) {
+            Ok(ref sleepers) => handler.cache.populate_sleep_cache(&sleepers),
+            Err(err) => panic!("Failed to populate sleep cache from DB: {:?}", err),
+        }
 
         handler
     }
@@ -157,6 +171,34 @@ impl<'a> UpdateHandler<'a> {
             && !self.settings.is_chat_allowed(message.chat.id)
         {
             return Err(HandleUpdateError::Skip(update.update_id));
+        }
+
+        let user_id = helpers::get_user_id(message)?;
+        if self.cache.get_sleep_status(user_id) {
+            match crate::services::sleep::functions::end_sleep(user_id, &mut self.postgres) {
+                Ok(event) => {
+                    let sleep_duration = Duration::from_secs(
+                        (event.ended_at.unwrap() - event.started_at)
+                            .to_std()
+                            .unwrap()
+                            .as_secs(),
+                    );
+                    let mut send_message_params = SendMessageParams::new(
+                        ChatId::Integer(message.chat.id),
+                        format_sleep_data(
+                            self.settings,
+                            message.from.as_ref().unwrap(),
+                            event.message,
+                            sleep_duration,
+                        ),
+                    );
+                    send_message_params.set_reply_to_message_id(Some(message.message_id));
+                    let _ = self.api.send_message(&send_message_params);
+                }
+                Err(ServiceError::NotFound) => {}
+                Err(err) => println!("Failed to end sleep status for user {}: {}", user_id, err),
+            };
+            self.cache.cache_sleep_status(user_id, false);
         }
 
         if let Some(err) = Self::find_command_entity(message).and_then(|entity| {
