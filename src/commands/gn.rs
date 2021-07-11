@@ -36,10 +36,14 @@ fn handler(
         "rafk" => SleepType::Continue,
         _ => SleepType::New,
     };
+    let afk_message = match args.is_empty() {
+        true => None,
+        false => Some(args.to_string())
+    };
     crate::services::sleep::functions::go_to_sleep(
         user_id,
         sleep_type,
-        Some(args.to_string()),
+        afk_message,
         conn,
     )?;
     cache.cache_sleep_status(user_id, true);
