@@ -20,6 +20,7 @@ use crate::services::sleep::{
 };
 use crate::services::weather::{format_weather_data, get_weather, Identifier};
 use crate::settings::Settings;
+use crate::services::sleep::functions::end_sleep;
 
 const BOT_COMMAND: &str = "bot_command";
 const CHAT_TYPE_PRIVATE: &str = "private";
@@ -175,7 +176,7 @@ impl<'a> UpdateHandler<'a> {
 
         let user_id = helpers::get_user_id(message)?;
         if self.cache.get_sleep_status(user_id) {
-            match crate::services::sleep::functions::end_sleep(user_id, &mut self.postgres) {
+            match end_sleep(user_id, &mut self.postgres) {
                 Ok(event) => {
                     let sleep_duration = Duration::from_secs(
                         (event.ended_at.unwrap() - event.started_at)
