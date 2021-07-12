@@ -1,9 +1,11 @@
+use config::{Config, ConfigError};
+use frankenstein::Message;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use crate::commands::{donate, gn, weather};
-use config::{Config, ConfigError};
-use serde::Deserialize;
+use crate::errors::HandleUpdateError;
 
 #[derive(Deserialize)]
 pub struct OpenWeatherSettings {
@@ -35,19 +37,28 @@ pub struct CommandsMap {
     pub weather: weather::CommandSettings,
 }
 
+#[derive(Debug, Deserialize)]
+struct AllowedChatsSettings {
+    allow_unspecified: Option<bool>,
+    private: Option<HashMap<i64, bool>>,
+    group: Option<HashMap<i64, bool>>,
+    supergroup: Option<HashMap<i64, bool>>,
+    channel: Option<HashMap<i64, bool>>,
+}
+
 #[derive(Deserialize)]
 pub struct Settings {
     pub token: String,
     pub postgres_dsn: String,
     pub admins: Vec<u64>,
+    #[serde(skip)]
+    _admins_map: Option<HashMap<u64, ()>>,
     pub commands: CommandsMap,
     pub open_weather: OpenWeatherSettings,
     wake_up_format: Option<String>,
     #[serde(skip)]
     _wake_up_format_tpl: Option<liquid::Template>,
-    allowed_chats: Option<Vec<i64>>,
-    #[serde(skip)]
-    _allowed_chats_hashmap: Option<HashMap<i64, ()>>,
+    allowed_chats: AllowedChatsSettings,
 }
 
 impl Debug for Settings {
@@ -74,6 +85,8 @@ impl Settings {
             .merge(config::Environment::with_prefix("bot"))?;
 
         let mut s: Self = s.try_into()?;
+
+        s._admins_map = Some(s.admins.iter().map(|i| (i.to_owned(), ())).collect());
 
         if s.open_weather.message_format.is_none() {
             s.open_weather.message_format = Some(
@@ -109,19 +122,63 @@ impl Settings {
                 })?,
         );
 
-        if let Some(allowed_chats) = s.allowed_chats.as_ref() {
-            s._allowed_chats_hashmap =
-                Some(allowed_chats.iter().map(|i| (i.to_owned(), ())).collect());
-        };
-
         Ok(s)
     }
 
-    pub fn is_chat_allowed(&self, chat_id: i64) -> bool {
-        if let Some(allowed_chats_map) = self._allowed_chats_hashmap.as_ref() {
-            allowed_chats_map.contains_key(&chat_id)
+    pub fn is_admin(&self, user_id: u64) -> bool {
+        self._admins_map.as_ref().unwrap().contains_key(&user_id)
+    }
+
+    pub fn check_for_allowed_update(
+        &self,
+        Message { chat, from, .. }: &Message,
+    ) -> Option<HandleUpdateError> {
+        let chat_id = chat.id;
+        let chat_type = chat.type_field.as_str();
+        let from_id = match from.as_ref() {
+            Some(from) => from.id,
+            None => 0,
+        };
+
+        if self.is_admin(from_id) {
+            return None;
+        }
+
+        let default = self.allowed_chats.allow_unspecified.unwrap_or(true);
+
+        let chat_id_allowed_map = match chat_type {
+            "private" => self.allowed_chats.private.as_ref(),
+            "group" => self.allowed_chats.group.as_ref(),
+            "supergroup" => self.allowed_chats.supergroup.as_ref(),
+            "channel" => self.allowed_chats.channel.as_ref(),
+            _ => panic!("undefined chat_type: {}", chat_type),
+        };
+
+        let mut reason = String::new();
+
+        let allowed = chat_id_allowed_map
+            .and_then(|map| {
+                if map.get(&0).is_some() {
+                    return Some(&true);
+                }
+
+                reason = format!(
+                    "configuration: [allowed_chats].{}[{}] is false",
+                    chat_type, chat_id
+                );
+                map.get(&chat_id)
+            })
+            .or_else(|| {
+                reason = String::from("configuration: [allowed_chats].allow_unspecified is false");
+                Some(&default)
+            })
+            .unwrap()
+            .to_owned();
+
+        if !allowed {
+            Some(HandleUpdateError::NotAllowed(chat_id, reason))
         } else {
-            true
+            None
         }
     }
 

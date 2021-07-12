@@ -6,9 +6,10 @@ use std::fmt::Debug;
 #[derive(Debug)]
 pub enum HandleUpdateError {
     Command(String),
-    Skip(u32),
+    Skip,
     Api(frankenstein::Error),
     Service(Box<dyn Error>),
+    NotAllowed(i64, String),
 }
 
 impl fmt::Display for HandleUpdateError {
@@ -23,8 +24,13 @@ impl fmt::Display for HandleUpdateError {
                     write!(f, "API error: {} {}", err.error_code, err.description)
                 }
             },
-            Self::Skip(_) => write!(f, "Update skipped"),
+            Self::Skip => write!(f, "Update skipped"),
             Self::Service(ref err) => write!(f, "Service error: {}", err),
+            Self::NotAllowed(ref chat_id, ref reason) => write!(
+                f,
+                "Chat not allowed (disallowed by {}): {}",
+                reason, chat_id
+            ),
         }
     }
 }

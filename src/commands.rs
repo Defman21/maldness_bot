@@ -77,7 +77,7 @@ impl<'a> CommandsExecutor<'a> {
     }
 
     fn is_admin(&self, uid: u64) -> bool {
-        self.settings.admins.contains(&uid)
+        self.settings.is_admin(uid)
     }
 
     pub fn execute(
