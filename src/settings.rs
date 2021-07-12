@@ -158,6 +158,10 @@ impl Settings {
 
         let allowed = chat_id_allowed_map
             .and_then(|map| {
+                if map.get(&0).is_some() {
+                    return Some(&true);
+                }
+
                 reason = format!(
                     "configuration: [allowed_chats].{}[{}] is false",
                     chat_type, chat_id
