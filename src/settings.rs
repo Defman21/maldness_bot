@@ -156,7 +156,7 @@ impl Settings {
 
         let mut reason = String::new();
 
-        if !chat_id_allowed_map
+        let allowed = chat_id_allowed_map
             .and_then(|map| {
                 reason = format!(
                     "configuration: [allowed_chats].{}[{}] is false",
@@ -169,8 +169,9 @@ impl Settings {
                 Some(&default)
             })
             .unwrap()
-            .to_owned()
-        {
+            .to_owned();
+
+        if !allowed {
             Some(HandleUpdateError::NotAllowed(chat_id, reason))
         } else {
             None
