@@ -9,7 +9,7 @@ pub enum HandleUpdateError {
     Skip,
     Api(frankenstein::Error),
     Service(Box<dyn Error>),
-    NotAllowed(i64, String),
+    NotAllowed(i64, String, String),
 }
 
 impl fmt::Display for HandleUpdateError {
@@ -26,10 +26,10 @@ impl fmt::Display for HandleUpdateError {
             },
             Self::Skip => write!(f, "Update skipped"),
             Self::Service(ref err) => write!(f, "Service error: {}", err),
-            Self::NotAllowed(ref chat_id, ref reason) => write!(
+            Self::NotAllowed(ref chat_id, ref reason, ref chat_name) => write!(
                 f,
-                "Chat not allowed (disallowed by {}): {}",
-                reason, chat_id
+                "Chat not allowed (disallowed by {}): {} ({})",
+                reason, chat_id, chat_name,
             ),
         }
     }

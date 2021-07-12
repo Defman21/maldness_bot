@@ -176,7 +176,11 @@ impl Settings {
             .to_owned();
 
         if !allowed {
-            Some(HandleUpdateError::NotAllowed(chat_id, reason))
+            Some(HandleUpdateError::NotAllowed(
+                chat_id,
+                reason,
+                chat.title.clone().unwrap_or_else(|| "Private chat".into()),
+            ))
         } else {
             None
         }
