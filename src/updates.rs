@@ -161,10 +161,7 @@ impl<'a> UpdateHandler<'a> {
     }
 
     pub fn handle_update(&mut self, update: &Update) -> Result<(), HandleUpdateError> {
-        let message = update
-            .message
-            .as_ref()
-            .ok_or(HandleUpdateError::Skip(update.update_id))?;
+        let message = update.message.as_ref().ok_or(HandleUpdateError::Skip)?;
 
         if let Some(err) = self.settings.check_for_allowed_update(message) {
             return Err(err);
@@ -203,7 +200,7 @@ impl<'a> UpdateHandler<'a> {
             self.handle_command(update, message, entity).err()
         }) {
             match err {
-                HandleUpdateError::Skip(_) => {}
+                HandleUpdateError::Skip => {}
                 _ => return Err(err),
             };
         };
