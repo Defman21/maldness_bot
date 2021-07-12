@@ -154,7 +154,7 @@ impl Settings {
             _ => panic!("undefined chat_type: {}", chat_type),
         };
 
-        let mut reason = String::from("configuration: [allowed_chats].allow_unspecified is false");
+        let mut reason = String::new();
 
         let allowed = chat_id_allowed_map
             .and_then(|map| {
@@ -168,7 +168,10 @@ impl Settings {
                 );
                 map.get(&chat_id)
             })
-            .or(Some(&default))
+            .or_else(|| {
+                reason = String::from("configuration: [allowed_chats].allow_unspecified is false");
+                Some(&default)
+            })
             .unwrap()
             .to_owned();
 
