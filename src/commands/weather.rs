@@ -1,4 +1,4 @@
-use frankenstein::{ChatAction, ChatId, SendMessageParams, TelegramApi};
+use frankenstein::ChatAction;
 use serde::Deserialize;
 use ureq::Error as RequestError;
 
@@ -61,11 +61,11 @@ fn handler(
                 .unwrap_or_else(|| "This user does not have a location set.".into()),
         };
 
-        let send_message_params = SendMessageParams::new(ChatId::Integer(message.chat.id), text);
-        if let Some(err) = api.send_message(&send_message_params).err() {
-            return HandleUpdateError::Api(err);
+        if let Err(err) =
+            helpers::send_text_message(api, message.chat.id, text, Some(message.message_id))
+        {
+            return err;
         }
-
         HandleUpdateError::Command("handled return".into())
     };
 
@@ -111,36 +111,26 @@ fn handler(
     }
 
     match result {
-        Ok(ref data) => {
-            let mut send_message_params = SendMessageParams::new(
-                ChatId::Integer(message.chat.id),
-                format_weather_data(&data, &settings),
-            );
-            send_message_params.set_reply_to_message_id(Some(message.message_id));
-
-            api.send_message(&send_message_params)
-                .map(|_| ())
-                .map_err(HandleUpdateError::Api)
-        }
+        Ok(ref data) => helpers::send_text_message(
+            api,
+            message.chat.id,
+            format_weather_data(&data, &settings),
+            Some(message.message_id),
+        ),
         Err(err) => match err {
             WeatherError::Json(io_err) => Err(HandleUpdateError::Command(io_err.to_string())),
             WeatherError::Request(http_err) => match http_err {
-                RequestError::Status(404, _) => {
-                    let mut send_message_params = SendMessageParams::new(
-                        ChatId::Integer(message.chat.id),
-                        settings
-                            .commands
-                            .weather
-                            .not_found_text
-                            .clone()
-                            .unwrap_or_else(|| "No weather data for this location found".into()),
-                    );
-                    send_message_params.set_reply_to_message_id(Some(message.message_id));
-
-                    api.send_message(&send_message_params)
-                        .map(|_| ())
-                        .map_err(HandleUpdateError::Api)
-                }
+                RequestError::Status(404, _) => helpers::send_text_message(
+                    api,
+                    message.chat.id,
+                    settings
+                        .commands
+                        .weather
+                        .not_found_text
+                        .clone()
+                        .unwrap_or_else(|| "No weather data for this location found".into()),
+                    Some(message.message_id),
+                ),
                 err => Err(HandleUpdateError::Command(err.to_string())),
             },
         },

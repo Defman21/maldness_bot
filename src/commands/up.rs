@@ -1,7 +1,6 @@
-use frankenstein::{ChatId, SendMessageParams, TelegramApi};
-
 use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
+use crate::helpers;
 
 pub const UP: Command = Command {
     name: "up",
@@ -11,18 +10,11 @@ pub const UP: Command = Command {
     chat_action: None,
 };
 
-fn handler(
-    CommandParams {
-        api, message, args, ..
-    }: CommandParams,
-) -> CommandResult<HandleUpdateError> {
-    let mut send_message_params = SendMessageParams::new(
-        ChatId::Integer(message.chat.id),
-        format!("I'm up and running, your args: {:?}", args),
-    );
-    send_message_params.set_reply_to_message_id(Some(message.message_id));
-
-    api.send_message(&send_message_params)
-        .map(|_| ())
-        .map_err(HandleUpdateError::Api)
+fn handler(CommandParams { api, message, .. }: CommandParams) -> CommandResult<HandleUpdateError> {
+    helpers::send_text_message(
+        api,
+        message.chat.id,
+        "I'm good.".into(),
+        Some(message.message_id),
+    )
 }

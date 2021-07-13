@@ -177,17 +177,17 @@ impl<'a> UpdateHandler<'a> {
                             .unwrap()
                             .as_secs(),
                     );
-                    let mut send_message_params = SendMessageParams::new(
-                        ChatId::Integer(message.chat.id),
+                    let _ = helpers::send_text_message(
+                        self.api,
+                        message.chat.id,
                         format_sleep_data(
                             self.settings,
                             message.from.as_ref().unwrap(),
                             event.message,
                             sleep_duration,
                         ),
+                        Some(message.message_id),
                     );
-                    send_message_params.set_reply_to_message_id(Some(message.message_id));
-                    let _ = self.api.send_message(&send_message_params);
                 }
                 Err(ServiceError::NotFound) => {}
                 Err(err) => println!("Failed to end sleep status for user {}: {}", user_id, err),

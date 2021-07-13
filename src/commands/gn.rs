@@ -1,4 +1,4 @@
-use frankenstein::{ChatAction, ChatId, SendMessageParams, TelegramApi};
+use frankenstein::ChatAction;
 use serde::Deserialize;
 
 use crate::commands::{Command, CommandParams, CommandResult};
@@ -42,18 +42,15 @@ fn handler(
     };
     go_to_sleep(user_id, sleep_type, afk_message, conn)?;
     cache.cache_sleep_status(user_id, true);
-    let mut send_message_params = SendMessageParams::new(
-        ChatId::Integer(message.chat.id),
+    helpers::send_text_message(
+        api,
+        message.chat.id,
         settings
             .commands
             .gn
             .good_night_text
             .clone()
             .unwrap_or_else(|| "Good night!".into()),
-    );
-    send_message_params.set_reply_to_message_id(Some(message.message_id));
-
-    api.send_message(&send_message_params)
-        .map(|_| ())
-        .map_err(HandleUpdateError::Api)
+        Some(message.message_id),
+    )
 }

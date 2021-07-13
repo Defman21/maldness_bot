@@ -1,8 +1,8 @@
-use frankenstein::{ChatId, SendMessageParams, TelegramApi};
 use serde::Deserialize;
 
 use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
+use crate::helpers;
 
 pub const DONATE: Command = Command {
     name: "donate",
@@ -26,10 +26,5 @@ fn handler(
     }: CommandParams,
 ) -> CommandResult<HandleUpdateError> {
     let text = settings.commands.donate.text.clone();
-    let mut send_message_params = SendMessageParams::new(ChatId::Integer(message.chat.id), text);
-    send_message_params.set_reply_to_message_id(Some(message.message_id));
-
-    api.send_message(&send_message_params)
-        .map(|_| ())
-        .map_err(HandleUpdateError::Api)
+    helpers::send_text_message(api, message.chat.id, text, Some(message.message_id))
 }

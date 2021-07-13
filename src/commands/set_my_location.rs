@@ -11,7 +11,11 @@ pub const SET_MY_LOCATION: Command = Command {
     chat_action: None,
 };
 
-fn handler(CommandParams { conn, message, .. }: CommandParams) -> CommandResult<HandleUpdateError> {
+fn handler(
+    CommandParams {
+        api, conn, message, ..
+    }: CommandParams,
+) -> CommandResult<HandleUpdateError> {
     let location = message
         .reply_to_message
         .as_ref()
@@ -24,5 +28,13 @@ fn handler(CommandParams { conn, message, .. }: CommandParams) -> CommandResult<
 
     functions::set_location(conn, user_id, location.latitude, location.longitude)
         .map(|_| ())
-        .map_err(|e| HandleUpdateError::Command(e.to_string()))
+        .map_err(|e| HandleUpdateError::Command(e.to_string()))?;
+
+    // todo: replace "Location set" with a setting
+    helpers::send_text_message(
+        api,
+        message.chat.id,
+        "Location set!".into(),
+        Some(message.message_id),
+    )
 }
