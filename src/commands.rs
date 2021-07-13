@@ -11,6 +11,7 @@ pub mod donate;
 pub mod gn;
 pub mod set_my_location;
 pub mod set_paying_status;
+pub mod shuffle;
 pub mod up;
 pub mod weather;
 
