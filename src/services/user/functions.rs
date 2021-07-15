@@ -38,8 +38,15 @@ pub fn get_by_telegram_uid(conn: &mut PgConnection, telegram_uid: i64) -> Result
     }
 }
 
+pub fn get_by_telegram_uid_or_create(conn: &mut PgConnection, telegram_uid: i64) -> Result<User> {
+    get_by_telegram_uid(conn, telegram_uid).or_else(|err| match err {
+        ServiceError::NotFound => create(conn, telegram_uid, None, None, None),
+        err => Err(err),
+    })
+}
+
 pub fn create(
-    client: &mut PgConnection,
+    conn: &mut PgConnection,
     telegram_uid: i64,
     is_paying: Option<bool>,
     latitude: Option<f64>,
@@ -55,7 +62,7 @@ pub fn create(
             longitude,
         })
         .returning(id)
-        .get_result(client)
+        .get_result(conn)
     {
         Ok(user_id) => Ok(User {
             id: user_id,
@@ -69,11 +76,11 @@ pub fn create(
 }
 
 pub fn set_paying_status(
-    client: &mut PgConnection,
+    conn: &mut PgConnection,
     telegram_uid: i64,
     is_paying: bool,
 ) -> Result<User> {
-    match get_by_telegram_uid(client, telegram_uid) {
+    match get_by_telegram_uid(conn, telegram_uid) {
         Ok(_) => {
             use crate::schema::users::dsl::{
                 is_paying as is_paying_db, telegram_uid as telegram_uid_db, users,
@@ -81,23 +88,23 @@ pub fn set_paying_status(
 
             diesel::update(users.filter(telegram_uid_db.eq(telegram_uid)))
                 .set(is_paying_db.eq(is_paying))
-                .get_result::<User>(client)
+                .get_result::<User>(conn)
                 .map_err(ServiceError::from)
         }
         Err(err) => match err {
-            ServiceError::NotFound => create(client, telegram_uid, Some(is_paying), None, None),
+            ServiceError::NotFound => create(conn, telegram_uid, Some(is_paying), None, None),
             _ => Err(err),
         },
     }
 }
 
 pub fn set_location(
-    client: &mut PgConnection,
+    conn: &mut PgConnection,
     telegram_uid: i64,
     latitude: f64,
     longitude: f64,
 ) -> Result<User> {
-    match get_by_telegram_uid(client, telegram_uid) {
+    match get_by_telegram_uid(conn, telegram_uid) {
         Ok(_) => {
             use crate::schema::users::dsl::{
                 latitude as latitude_db, longitude as longitude_db,
@@ -106,12 +113,12 @@ pub fn set_location(
 
             diesel::update(users.filter(telegram_uid_db.eq(telegram_uid)))
                 .set((latitude_db.eq(latitude), longitude_db.eq(longitude)))
-                .get_result::<User>(client)
+                .get_result::<User>(conn)
                 .map_err(ServiceError::from)
         }
         Err(err) => match err {
             ServiceError::NotFound => {
-                create(client, telegram_uid, None, Some(latitude), Some(longitude))
+                create(conn, telegram_uid, None, Some(latitude), Some(longitude))
             }
             _ => Err(err),
         },

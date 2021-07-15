@@ -1,7 +1,6 @@
 use crate::services::afk_event::errors::ServiceError;
 use crate::services::user::{
-    errors::ServiceError as UserServiceError,
-    functions::{create as create_user, get_by_telegram_uid, User},
+    functions::{get_by_telegram_uid_or_create, User},
 };
 
 use crate::services::afk_event::format_sleep_data;
@@ -91,11 +90,7 @@ pub fn begin_event(
     action_type: ActionType,
     message: Option<String>,
 ) -> Result<AfkEvent> {
-    let user = match get_by_telegram_uid(conn, user_id) {
-        Ok(user) => user,
-        Err(UserServiceError::NotFound) => create_user(conn, user_id, None, None, None)?,
-        Err(err) => return Err(ServiceError::from(err)),
-    };
+    let user = get_by_telegram_uid_or_create(conn, user_id)?;
 
     match action_type {
         ActionType::Continue => match get_last_not_ended_event(conn, &user, event_type) {
