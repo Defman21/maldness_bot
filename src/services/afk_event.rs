@@ -17,7 +17,7 @@ struct FormatSleepGlobals {
 pub fn format_sleep_data(
     settings: &Settings,
     from: &User,
-    message: Option<String>,
+    message: Option<&String>,
     duration: Duration,
 ) -> String {
     let username = match &from.username {
@@ -31,7 +31,7 @@ pub fn format_sleep_data(
 
     let globals = liquid::to_object(&FormatSleepGlobals {
         username,
-        message: message.unwrap_or_else(|| "N/A".into()),
+        message: message.cloned().unwrap_or_else(|| "N/A".into()),
         duration: format_duration(duration).to_string(),
     })
     .expect("Failed to serialize FormatSleepGlobals to liquid::Object");
