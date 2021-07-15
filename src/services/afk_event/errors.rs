@@ -13,8 +13,8 @@ pub enum ServiceError {
 impl fmt::Display for ServiceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            ServiceError::Default(ref msg) => write!(f, "Sleep events service error: {}", msg),
-            ServiceError::NotFound => write!(f, "Sleep event not found"),
+            ServiceError::Default(ref msg) => write!(f, "AFK events service error: {}", msg),
+            ServiceError::NotFound => write!(f, "AFK event not found"),
         }
     }
 }

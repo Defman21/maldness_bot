@@ -1,12 +1,13 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    sleep_events (id) {
+    afk_events (id) {
         id -> Int4,
         started_at -> Timestamp,
         ended_at -> Nullable<Timestamp>,
         message -> Nullable<Text>,
         user_id -> Int4,
+        event_type -> Int4,
     }
 }
 
@@ -20,6 +21,6 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(sleep_events -> users (user_id));
+diesel::joinable!(afk_events -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(sleep_events, users,);
+diesel::allow_tables_to_appear_in_same_query!(afk_events, users,);

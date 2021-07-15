@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::process::exit;
-use std::time::Duration;
 
 use diesel::pg::Pg;
 use diesel::prelude::*;
@@ -15,10 +14,8 @@ use crate::cache::Cache;
 use crate::commands::CommandsExecutor;
 use crate::errors::HandleUpdateError;
 use crate::helpers;
-use crate::services::sleep::functions::end_sleep;
-use crate::services::sleep::{
-    errors::ServiceError, format_sleep_data, functions::get_sleeping_users,
-};
+use crate::services::afk_event::functions::end_event;
+use crate::services::afk_event::{errors::ServiceError, functions::get_afk_users};
 use crate::services::weather::{format_weather_data, get_weather, Identifier};
 use crate::settings::Settings;
 
@@ -73,9 +70,9 @@ impl<'a> UpdateHandler<'a> {
             }
         };
 
-        match get_sleeping_users(&mut handler.postgres) {
-            Ok(ref sleepers) => handler.cache.populate_sleep_cache(&sleepers),
-            Err(err) => panic!("Failed to populate sleep cache from DB: {:?}", err),
+        match get_afk_users(&mut handler.postgres) {
+            Ok(ref afks) => handler.cache.populate_afk_cache(&afks),
+            Err(err) => panic!("Failed to populate afk_event cache from DB: {:?}", err),
         }
 
         handler
@@ -168,31 +165,20 @@ impl<'a> UpdateHandler<'a> {
         }
 
         let user_id = helpers::get_user_id(message)?;
-        if self.cache.get_sleep_status(user_id) {
-            match end_sleep(user_id, &mut self.postgres) {
+        if let Some(event_id) = self.cache.get_afk_event_id(user_id) {
+            match end_event(&mut self.postgres, event_id) {
                 Ok(event) => {
-                    let sleep_duration = Duration::from_secs(
-                        (event.ended_at.unwrap() - event.started_at)
-                            .to_std()
-                            .unwrap()
-                            .as_secs(),
-                    );
                     let _ = helpers::send_text_message(
                         self.api,
                         message.chat.id,
-                        format_sleep_data(
-                            self.settings,
-                            message.from.as_ref().unwrap(),
-                            event.message,
-                            sleep_duration,
-                        ),
+                        event.to_string(self.settings, message),
                         Some(message.message_id),
                     );
                 }
                 Err(ServiceError::NotFound) => {}
-                Err(err) => println!("Failed to end sleep status for user {}: {}", user_id, err),
+                Err(err) => println!("Failed to end afk event for user {}: {}", user_id, err),
             };
-            self.cache.cache_sleep_status(user_id, false);
+            self.cache.cache_afk_event_id(user_id, false, event_id);
         }
 
         if let Some(err) = Self::find_command_entity(message).and_then(|entity| {

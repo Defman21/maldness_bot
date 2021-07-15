@@ -5,7 +5,7 @@ use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
 
 use crate::helpers;
-use crate::services::sleep::functions::{go_to_sleep, SleepType};
+use crate::services::afk_event::functions::{begin_event, ActionType, EventType};
 
 pub const GOOD_NIGHT: Command = Command {
     name: "gn",
@@ -32,16 +32,16 @@ fn handler(
     }: CommandParams,
 ) -> CommandResult<HandleUpdateError> {
     let user_id = helpers::get_user_id(message)?;
-    let sleep_type = match args {
-        "rafk" => SleepType::Continue,
-        _ => SleepType::New,
+    let action_type = match args {
+        "rafk" => ActionType::Continue,
+        _ => ActionType::New,
     };
     let afk_message = match args.is_empty() {
         true => None,
         false => Some(args.to_string()),
     };
-    go_to_sleep(user_id, sleep_type, afk_message, conn)?;
-    cache.cache_sleep_status(user_id, true);
+    let event = begin_event(conn, user_id, EventType::Sleep, action_type, afk_message)?;
+    cache.cache_afk_event_id(user_id, true, event.id);
     helpers::send_text_message(
         api,
         message.chat.id,
