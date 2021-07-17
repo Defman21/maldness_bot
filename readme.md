@@ -26,6 +26,8 @@ postgres_dsn = "postgresql://admin:123@postgres/maldness_bot?sslmode=disable"
 # * message - optional text message they've left when went to bed (N/A if none)
 # * duration - human-readable duration (1h 2m 3s)
 wake_up_format = "{{ username }} woke up and said: {{ message }}. He've slept for {{ duration }}"
+# Back from work message format, available variables are the same as in wake_up_format
+back_from_work_format = "{{ username }} finished working: {{ message }}. They've worked for {{ duration }}"
 
 [allowed_chats]
 # allow unspecified chats to use the bot, defaults to true
@@ -70,4 +72,8 @@ good_night_text = "Good night!"
 [commands.shuffle]
 # Text for when the bot could not shuffle anything in the message or in the reply to the message
 nothing_to_shuffle_text = "Nothing to shuffle!"
+
+[commands.work]
+# Text for the /work command
+work_text = "Have a good one, king."
 ```

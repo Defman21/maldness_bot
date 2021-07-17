@@ -1,9 +1,7 @@
 use crate::services::afk_event::errors::ServiceError;
-use crate::services::user::{
-    functions::{get_by_telegram_uid_or_create, User},
-};
+use crate::services::user::functions::{get_by_telegram_uid_or_create, User};
 
-use crate::services::afk_event::format_sleep_data;
+use crate::services::afk_event::render_template;
 use crate::settings::Settings;
 use chrono::prelude::*;
 use diesel::prelude::*;
@@ -14,12 +12,14 @@ use std::time::Duration;
 #[derive(Copy, Clone)]
 pub enum EventType {
     Sleep = 1,
+    Work = 2,
 }
 
 impl From<i32> for EventType {
     fn from(v: i32) -> Self {
         match v {
             1 => EventType::Sleep,
+            2 => EventType::Work,
             _ => panic!("unsupported event type: {}", v),
         }
     }
@@ -39,21 +39,24 @@ pub struct AfkEvent {
 
 impl AfkEvent {
     pub fn to_string(&self, settings: &Settings, message: &Message) -> String {
-        let sleep_duration = Duration::from_secs(
+        let event_duration = Duration::from_secs(
             (self.ended_at.unwrap() - self.started_at)
                 .to_std()
                 .unwrap()
                 .as_secs(),
         );
 
-        match EventType::from(self.event_type) {
-            EventType::Sleep => format_sleep_data(
-                settings,
-                message.from.as_ref().unwrap(),
-                self.message.as_ref(),
-                sleep_duration,
-            ),
-        }
+        let template = match EventType::from(self.event_type) {
+            EventType::Sleep => settings.wake_up_template(),
+            EventType::Work => settings.back_from_work_template(),
+        };
+
+        render_template(
+            template,
+            message.from.as_ref().unwrap(),
+            self.message.as_ref(),
+            event_duration,
+        )
     }
 }
 

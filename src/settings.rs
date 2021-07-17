@@ -4,7 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use crate::commands::{donate, gn, shuffle, weather};
+use crate::commands::{donate, gn, shuffle, weather, work};
 use crate::errors::HandleUpdateError;
 
 #[derive(Deserialize)]
@@ -36,6 +36,7 @@ pub struct CommandsMap {
     pub gn: gn::CommandSettings,
     pub weather: weather::CommandSettings,
     pub shuffle: shuffle::CommandSettings,
+    pub work: work::CommandSettings,
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,8 +58,11 @@ pub struct Settings {
     pub commands: CommandsMap,
     pub open_weather: OpenWeatherSettings,
     wake_up_format: Option<String>,
+    back_from_work_format: Option<String>,
     #[serde(skip)]
     _wake_up_format_tpl: Option<liquid::Template>,
+    #[serde(skip)]
+    _back_from_work_format_tpl: Option<liquid::Template>,
     allowed_chats: AllowedChatsSettings,
 }
 
@@ -67,13 +71,14 @@ impl Debug for Settings {
         write!(
             f,
             "<Settings token={} postgres_dsn={} admins={:?} commands={:?} open_weather={:?} \
-        wake_up_format={:?} allowed_chats={:?}>",
+        wake_up_format={:?} back_from_work_format={:?} allowed_chats={:?}>",
             self.token,
             self.postgres_dsn,
             self.admins,
             self.commands,
             self.open_weather,
             self.wake_up_format,
+            self.back_from_work_format,
             self.allowed_chats
         )
     }
@@ -97,7 +102,15 @@ impl Settings {
 
         if s.wake_up_format.is_none() {
             s.wake_up_format = Some(
-                "{{ username }} finished their sleep: {{ message }}. They've slept for {{ duration }}".into()
+                "{{ username }} have finished their sleep: {{ message }}. They've slept for {{ duration }}"
+                    .into()
+            );
+        }
+
+        if s.back_from_work_format.is_none() {
+            s.back_from_work_format = Some(
+                "{{ username }} have finished working: {{ message }}. They've worked for {{ duration }}"
+                    .into(),
             );
         }
 
@@ -119,6 +132,17 @@ impl Settings {
                 .parse(s.wake_up_format.as_ref().unwrap().as_str())
                 .map_err(|e| {
                     println!("There's an error in your wake_up_format setting!");
+                    ConfigError::Message(e.to_string())
+                })?,
+        );
+
+        s._back_from_work_format_tpl = Some(
+            liquid::ParserBuilder::with_stdlib()
+                .build()
+                .map_err(|e| ConfigError::Message(e.to_string()))?
+                .parse(s.back_from_work_format.as_ref().unwrap().as_str())
+                .map_err(|e| {
+                    println!("There's an error in your back_from_work_format setting!");
                     ConfigError::Message(e.to_string())
                 })?,
         );
@@ -187,7 +211,11 @@ impl Settings {
         }
     }
 
-    pub fn wake_up_format(&self) -> &liquid::Template {
+    pub fn wake_up_template(&self) -> &liquid::Template {
         self._wake_up_format_tpl.as_ref().unwrap()
+    }
+
+    pub fn back_from_work_template(&self) -> &liquid::Template {
+        self._back_from_work_format_tpl.as_ref().unwrap()
     }
 }
