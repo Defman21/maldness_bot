@@ -6,7 +6,7 @@ use std::time::Duration;
 use frankenstein::{Api, GetUpdatesParams, TelegramApi, Update};
 
 use crate::cache::Cache;
-use crate::commands::{donate, gn, set_my_location, set_paying_status, shuffle, up, weather};
+use crate::commands::{donate, gn, set_my_location, set_paying_status, shuffle, up, weather, work};
 use crate::settings::Settings;
 use crate::updates::UpdateHandler;
 
@@ -52,6 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .register(set_my_location::SET_MY_LOCATION);
     handler.commands_executor.register(gn::GOOD_NIGHT);
     handler.commands_executor.register(shuffle::SHUFFLE);
+    handler.commands_executor.register(work::WORK);
     handler.send_my_commands();
 
     let mut update_params = GetUpdatesParams::new();

@@ -14,6 +14,7 @@ pub mod set_paying_status;
 pub mod shuffle;
 pub mod up;
 pub mod weather;
+pub mod work;
 
 pub type CommandResult<T> = Result<(), T>;
 pub struct CommandParams<'a> {
