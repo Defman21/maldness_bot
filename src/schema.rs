@@ -18,6 +18,9 @@ diesel::table! {
         is_paying -> Bool,
         latitude -> Nullable<Float8>,
         longitude -> Nullable<Float8>,
+        first_name -> Nullable<Text>,
+        last_name -> Nullable<Text>,
+        username -> Nullable<Text>,
     }
 }
 

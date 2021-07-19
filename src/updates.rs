@@ -164,7 +164,7 @@ impl<'a> UpdateHandler<'a> {
             return Err(err);
         }
 
-        let user_id = helpers::get_user_id(message)?;
+        let user_id = helpers::get_user_id_by_message(message)?;
         if let Some(event_id) = self.cache.get_afk_event_id(user_id) {
             match end_event(&mut self.postgres, event_id) {
                 Ok(event) => {

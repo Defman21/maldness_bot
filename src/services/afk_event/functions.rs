@@ -1,5 +1,5 @@
 use crate::services::afk_event::errors::ServiceError;
-use crate::services::user::functions::{get_by_telegram_uid_or_create, User};
+use crate::services::user::functions::{get_by_telegram_user_or_create, User};
 
 use crate::services::afk_event::render_template;
 use crate::settings::Settings;
@@ -88,12 +88,12 @@ fn reset_event(conn: &mut PgConnection, event_id: i32) -> Result<AfkEvent> {
 
 pub fn begin_event(
     conn: &mut PgConnection,
-    user_id: i64,
+    user: &frankenstein::User,
     event_type: EventType,
     action_type: ActionType,
     message: Option<String>,
 ) -> Result<AfkEvent> {
-    let user = get_by_telegram_uid_or_create(conn, user_id)?;
+    let user = get_by_telegram_user_or_create(conn, user)?;
 
     match action_type {
         ActionType::Continue => match get_last_not_ended_event(conn, &user, event_type) {

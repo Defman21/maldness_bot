@@ -24,11 +24,14 @@ fn handler(
         .as_ref()
         .ok_or_else(|| HandleUpdateError::Command("location in the reply is empty".into()))?;
 
-    let user_id = helpers::get_user_id(message)?;
-
-    functions::set_location(conn, user_id, location.latitude, location.longitude)
-        .map(|_| ())
-        .map_err(|e| HandleUpdateError::Command(e.to_string()))?;
+    functions::set_location(
+        conn,
+        message.from.as_ref().unwrap(),
+        location.latitude,
+        location.longitude,
+    )
+    .map(|_| ())
+    .map_err(|e| HandleUpdateError::Command(e.to_string()))?;
 
     // todo: replace "Location set" with a setting
     helpers::send_text_message(
