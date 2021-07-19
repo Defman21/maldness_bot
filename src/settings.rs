@@ -45,7 +45,6 @@ struct AllowedChatsSettings {
     private: Option<HashMap<i64, bool>>,
     group: Option<HashMap<i64, bool>>,
     supergroup: Option<HashMap<i64, bool>>,
-    channel: Option<HashMap<i64, bool>>,
 }
 
 #[derive(Deserialize)]
@@ -158,8 +157,38 @@ impl Settings {
         &self,
         Message { chat, from, .. }: &Message,
     ) -> Option<HandleUpdateError> {
-        let chat_id = chat.id;
         let chat_type = chat.type_field.as_str();
+
+        let formatted_chat_title = || {
+            let res;
+
+            if let Some(title) = chat.title.clone() {
+                if let Some(username) = chat.username.clone() {
+                    res = format!("title={} username={}", title, username);
+                } else {
+                    res = format!("title={}", title);
+                }
+            } else {
+                res = format!(
+                    "Chat with first_name={:?} last_name={:?} username={:?}",
+                    chat.first_name, chat.last_name, chat.username
+                );
+            }
+
+            res
+        };
+
+        let chat_id = chat.id;
+
+        if chat_type == "channel" {
+            return Some(HandleUpdateError::NotAllowed {
+                chat_id,
+                reason: "The bot does not support channels".into(),
+                chat_name: formatted_chat_title(),
+                chat_type: chat_type.to_string(),
+            });
+        }
+
         let from_id = match from.as_ref() {
             Some(from) => from.id,
             None => 0,
@@ -175,7 +204,6 @@ impl Settings {
             "private" => self.allowed_chats.private.as_ref(),
             "group" => self.allowed_chats.group.as_ref(),
             "supergroup" => self.allowed_chats.supergroup.as_ref(),
-            "channel" => self.allowed_chats.channel.as_ref(),
             _ => panic!("undefined chat_type: {}", chat_type),
         };
 
@@ -201,11 +229,12 @@ impl Settings {
             .to_owned();
 
         if !allowed {
-            Some(HandleUpdateError::NotAllowed(
+            Some(HandleUpdateError::NotAllowed {
                 chat_id,
                 reason,
-                chat.title.clone().unwrap_or_else(|| "Private chat".into()),
-            ))
+                chat_name: formatted_chat_title(),
+                chat_type: chat_type.to_string(),
+            })
         } else {
             None
         }

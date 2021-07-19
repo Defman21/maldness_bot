@@ -22,7 +22,7 @@ use crate::settings::Settings;
 const BOT_COMMAND: &str = "bot_command";
 
 pub struct UpdateHandler<'a> {
-    api: &'a Api,
+    pub api: &'a Api,
     settings: &'a Settings,
     pub commands_executor: CommandsExecutor<'a>,
     bot_prefix: String,

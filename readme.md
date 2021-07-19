@@ -35,7 +35,6 @@ allow_unspecified = false
 # a map of <chat_id> = <is_allowed>
 supergroup = {-1234567 = true}
 group = {}
-channel = {}
 # 0 means "*" or every chat of the following type
 private = {0 = true}
 
