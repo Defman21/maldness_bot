@@ -5,7 +5,7 @@ use frankenstein::{Api, ChatId, Message, SendMessageParams, TelegramApi};
 use crate::commands::CommandResult;
 use crate::errors::HandleUpdateError;
 
-pub fn get_user_id(message: &Message) -> Result<i64, HandleUpdateError> {
+pub fn get_user_id_by_message(message: &Message) -> Result<i64, HandleUpdateError> {
     i64::try_from(
         message
             .from

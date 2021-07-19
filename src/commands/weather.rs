@@ -39,10 +39,10 @@ fn handler(
 ) -> CommandResult<HandleUpdateError> {
     let result: Result<WeatherResponse, WeatherError>;
 
-    let from_id = helpers::get_user_id(message)?;
+    let from = message.from.as_ref().unwrap();
 
-    let send_error_message = |user_id: i64| {
-        let text = match user_id == from_id {
+    let send_error_message = |user: &frankenstein::User| {
+        let text = match user.id == from.id {
             true => settings
                 .commands
                 .weather
@@ -69,27 +69,29 @@ fn handler(
         HandleUpdateError::Command("handled return".into())
     };
 
-    let mut get_location_by_user =
-        |user_id: i64| -> Result<Result<WeatherResponse, WeatherError>, HandleUpdateError> {
-            let User {
+    let mut get_location_by_user = |user: &frankenstein::User| -> Result<
+        Result<WeatherResponse, WeatherError>,
+        HandleUpdateError,
+    > {
+        let User {
+            latitude,
+            longitude,
+            ..
+        } = user::functions::get_by_telegram_user(conn, user).map_err(|err| match err {
+            ServiceError::NotFound => send_error_message(user),
+            err => HandleUpdateError::Command(err.to_string()),
+        })?;
+        let latitude = latitude.ok_or_else(|| send_error_message(user))?;
+        let longitude = longitude.ok_or_else(|| send_error_message(user))?;
+
+        Ok(get_weather(
+            Identifier::Location {
                 latitude,
                 longitude,
-                ..
-            } = user::functions::get_by_telegram_uid(conn, user_id).map_err(|err| match err {
-                ServiceError::NotFound => send_error_message(user_id),
-                err => HandleUpdateError::Command(err.to_string()),
-            })?;
-            let latitude = latitude.ok_or_else(|| send_error_message(user_id))?;
-            let longitude = longitude.ok_or_else(|| send_error_message(user_id))?;
-
-            Ok(get_weather(
-                Identifier::Location {
-                    latitude,
-                    longitude,
-                },
-                settings,
-            ))
-        };
+            },
+            settings,
+        ))
+    };
 
     if !args.is_empty() {
         result = get_weather(Identifier::Name(args.to_string()), settings);
@@ -103,11 +105,10 @@ fn handler(
                 settings,
             );
         } else {
-            let user_id = helpers::get_user_id(reply)?;
-            result = get_location_by_user(user_id)?;
+            result = get_location_by_user(reply.from.as_ref().unwrap())?;
         }
     } else {
-        result = get_location_by_user(from_id)?;
+        result = get_location_by_user(from)?;
     }
 
     match result {

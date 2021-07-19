@@ -2,7 +2,6 @@ use std::str::ParseBoolError;
 
 use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
-use crate::helpers;
 use crate::services::user::functions;
 
 pub const SET_PAYING_STATUS: Command = Command {
@@ -25,9 +24,7 @@ fn handler(
         .parse()
         .map_err(|e: ParseBoolError| HandleUpdateError::Command(e.to_string()))?;
 
-    let user_id = helpers::get_user_id(message)?;
-
-    functions::set_paying_status(conn, user_id, is_paying)
+    functions::set_paying_status(conn, message.from.as_ref().unwrap(), is_paying)
         .map(|_| ())
         .map_err(|e| HandleUpdateError::Command(e.to_string()))
 }

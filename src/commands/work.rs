@@ -31,7 +31,7 @@ fn handler(
         ..
     }: CommandParams,
 ) -> CommandResult<HandleUpdateError> {
-    let user_id = helpers::get_user_id(message)?;
+    let user = message.from.as_ref().unwrap();
     let action_type = match args {
         "rafk" => ActionType::Continue,
         _ => ActionType::New,
@@ -40,8 +40,8 @@ fn handler(
         true => None,
         false => Some(args.to_string()),
     };
-    let event = begin_event(conn, user_id, EventType::Work, action_type, afk_message)?;
-    cache.cache_afk_event_id(user_id, true, event.id);
+    let event = begin_event(conn, user, EventType::Work, action_type, afk_message)?;
+    cache.cache_afk_event_id(user.id as i64, true, event.id);
     helpers::send_text_message(
         api,
         message.chat.id,
