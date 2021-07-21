@@ -75,4 +75,8 @@ nothing_to_shuffle_text = "Nothing to shuffle!"
 [commands.work]
 # Text for the /work command
 work_text = "Have a good one, king."
+
+[commands.rafk]
+# Text for /rafk command when there's no afk event for the user
+no_afk_event_text = "You haven't been afk, tho..."
 ```

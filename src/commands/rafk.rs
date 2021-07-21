@@ -1,4 +1,5 @@
 use frankenstein::ChatAction;
+use serde::Deserialize;
 
 use crate::commands::{Command, CommandParams, CommandResult};
 use crate::errors::HandleUpdateError;
@@ -18,6 +19,11 @@ pub const RAFK: Command = Command {
     chat_action: Some(ChatAction::Typing),
 };
 
+#[derive(Debug, Deserialize)]
+pub struct CommandSettings {
+    pub no_afk_event_text: Option<String>,
+}
+
 fn handler(
     CommandParams {
         api,
@@ -35,6 +41,8 @@ fn handler(
             api,
             message.chat.id,
             settings
+                .commands
+                .rafk
                 .no_afk_event_text
                 .clone()
                 .unwrap_or_else(|| "You haven't been afk tho...".into()),

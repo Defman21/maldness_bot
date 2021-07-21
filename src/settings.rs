@@ -4,7 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use crate::commands::{donate, gn, shuffle, weather, work};
+use crate::commands::{donate, gn, rafk, shuffle, weather, work};
 use crate::errors::HandleUpdateError;
 
 #[derive(Deserialize)]
@@ -37,6 +37,7 @@ pub struct CommandsMap {
     pub weather: weather::CommandSettings,
     pub shuffle: shuffle::CommandSettings,
     pub work: work::CommandSettings,
+    pub rafk: rafk::CommandSettings,
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,7 +58,6 @@ pub struct Settings {
     pub commands: CommandsMap,
     pub open_weather: OpenWeatherSettings,
     wake_up_format: Option<String>,
-    pub no_afk_event_text: Option<String>,
     back_from_work_format: Option<String>,
     #[serde(skip)]
     _wake_up_format_tpl: Option<liquid::Template>,
