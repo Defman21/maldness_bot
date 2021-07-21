@@ -133,13 +133,13 @@ fn get_last_not_ended_event(
 
 pub fn get_afk_users(conn: &mut PgConnection) -> Result<Vec<(i64, i32)>> {
     use crate::schema::{
-        afk_events::dsl::{afk_events, ended_at, event_type},
+        afk_events::dsl::{afk_events, ended_at, id},
         users::dsl::{telegram_uid, users},
     };
 
     users
         .inner_join(afk_events)
-        .select((telegram_uid, event_type))
+        .select((telegram_uid, id))
         .filter(ended_at.is_null())
         .get_results(conn)
         .map_err(ServiceError::from)
