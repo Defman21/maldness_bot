@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 pub mod donate;
 pub mod gn;
+pub mod rafk;
 pub mod set_my_location;
 pub mod set_paying_status;
 pub mod shuffle;

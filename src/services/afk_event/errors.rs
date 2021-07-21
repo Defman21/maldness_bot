@@ -8,6 +8,7 @@ use std::fmt;
 pub enum ServiceError {
     Default(String),
     NotFound,
+    User(UserServiceError),
 }
 
 impl fmt::Display for ServiceError {
@@ -15,6 +16,11 @@ impl fmt::Display for ServiceError {
         match *self {
             ServiceError::Default(ref msg) => write!(f, "AFK events service error: {}", msg),
             ServiceError::NotFound => write!(f, "AFK event not found"),
+            ServiceError::User(ref err) => write!(
+                f,
+                "User service error thrown in AFK events service: {}",
+                err
+            ),
         }
     }
 }
@@ -35,6 +41,6 @@ impl From<ServiceError> for HandleUpdateError {
 
 impl From<UserServiceError> for ServiceError {
     fn from(err: UserServiceError) -> Self {
-        Self::Default(err.to_string())
+        Self::User(err)
     }
 }

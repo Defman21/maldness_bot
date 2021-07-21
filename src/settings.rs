@@ -4,7 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use crate::commands::{donate, gn, shuffle, weather, work};
+use crate::commands::{donate, gn, rafk, shuffle, weather, work};
 use crate::errors::HandleUpdateError;
 
 #[derive(Deserialize)]
@@ -37,6 +37,7 @@ pub struct CommandsMap {
     pub weather: weather::CommandSettings,
     pub shuffle: shuffle::CommandSettings,
     pub work: work::CommandSettings,
+    pub rafk: rafk::CommandSettings,
 }
 
 #[derive(Debug, Deserialize)]
