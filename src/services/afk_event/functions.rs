@@ -1,5 +1,7 @@
 use crate::services::afk_event::errors::ServiceError;
-use crate::services::user::functions::{get_by_telegram_user_or_create, User};
+use crate::services::user::functions::{
+    get_by_telegram_user, get_by_telegram_user_or_create, User,
+};
 
 use crate::services::afk_event::render_template;
 use crate::settings::Settings;
@@ -58,6 +60,10 @@ impl AfkEvent {
             event_duration,
         )
     }
+
+    pub fn event_type(&self) -> EventType {
+        EventType::from(self.event_type)
+    }
 }
 
 #[derive(Insertable)]
@@ -96,7 +102,7 @@ pub fn begin_event(
     let user = get_by_telegram_user_or_create(conn, user)?;
 
     match action_type {
-        ActionType::Continue => match get_last_not_ended_event(conn, &user, event_type) {
+        ActionType::Continue => match get_latest_event(conn, &user) {
             Ok(event) => reset_event(conn, event.id),
             Err(ServiceError::NotFound) => create_event(conn, user.id, event_type, message),
             Err(err) => Err(err),
@@ -114,15 +120,17 @@ pub fn end_event(conn: &mut PgConnection, event_id: i32) -> Result<AfkEvent> {
         .map_err(ServiceError::from)
 }
 
-fn get_last_not_ended_event(
-    conn: &mut PgConnection,
-    user: &User,
-    event_type: EventType,
-) -> Result<AfkEvent> {
-    use crate::schema::afk_events::dsl::{event_type as event_type_db, id};
+pub fn reset_latest_event(conn: &mut PgConnection, user: &frankenstein::User) -> Result<AfkEvent> {
+    let user = get_by_telegram_user(conn, user)?;
+    let event = get_latest_event(conn, &user)?;
+
+    reset_event(conn, event.id)
+}
+
+fn get_latest_event(conn: &mut PgConnection, user: &User) -> Result<AfkEvent> {
+    use crate::schema::afk_events::dsl::id;
 
     AfkEvent::belonging_to(user)
-        .filter(event_type_db.eq(event_type as i32))
         .order_by(id.desc())
         .get_result::<AfkEvent>(conn)
         .map_err(|err| match err {

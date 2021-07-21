@@ -57,6 +57,7 @@ pub struct Settings {
     pub commands: CommandsMap,
     pub open_weather: OpenWeatherSettings,
     wake_up_format: Option<String>,
+    pub no_afk_event_text: Option<String>,
     back_from_work_format: Option<String>,
     #[serde(skip)]
     _wake_up_format_tpl: Option<liquid::Template>,
